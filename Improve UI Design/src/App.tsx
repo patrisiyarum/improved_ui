@@ -80,10 +80,7 @@ function predictCommentMock(text: string) {
   };
 }
 
-// API configuration - check if backend is available
-const API_URL = typeof window !== 'undefined' 
-  ? (window as any).NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  : 'http://localhost:8000';
+const API_URL = "https://feedback-webapp-5zc2.onrender.com";
 
 // API helper functions
 async function checkHealth() {
