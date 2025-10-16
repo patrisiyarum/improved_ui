@@ -12,7 +12,7 @@ import { BulkUpload } from "./components/BulkUpload";
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
 
-// ===== MOCK PREDICTION (used if API offline) =====
+// ===== MOCK PREDICTION (used if API offline) ====
 function predictCommentMock(text: string) {
   const mainCategories = [
     { label: "Food Quality", probability: 0 },
