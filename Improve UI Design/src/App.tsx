@@ -405,7 +405,7 @@ export default function App() {
                   <div className="mt-4 p-3 rounded bg-muted/50">
                     <p className="text-sm">
                       <strong>Think of it like this:</strong> If you sort your emails into folders automatically, 
-                      this model does the same thing for customer feedback—but it's much smarter because 
+                      this model does the same thing for customer feedback, but it's much smarter because 
                       it actually understands what people are saying!
                     </p>
                   </div>
@@ -445,15 +445,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border">
-                  <h4 className="mb-2">How It Works</h4>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                    <li>Input text is tokenized using BERT tokenizer</li>
-                    <li>Text embeddings are generated through BERT encoder</li>
-                    <li>Two classification heads predict main and subcategories</li>
-                    <li>Confidence scores are calculated for each prediction</li>
-                  </ol>
-                </div>
+                
               </CardContent>
             </Card>
           </TabsContent>
