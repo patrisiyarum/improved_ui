@@ -10,9 +10,10 @@ import { PredictionCard } from "./components/PredictionCard";
 import { SampleComments } from "./components/SampleComments";
 import { BulkUpload } from "./components/BulkUpload";
 
-// Mock prediction function (fallback if API is not available)
+const API_URL = "https://feedback-webapp-5zc2.onrender.com";
+
+// Mock prediction function (fallback if API or model not connected)
 function predictCommentMock(text: string) {
-  // Mock categories based on keywords
   const mainCategories = [
     { label: "Food Quality", probability: 0 },
     { label: "Food Safety", probability: 0 },
@@ -32,121 +33,86 @@ function predictCommentMock(text: string) {
   ];
 
   const lowerText = text.toLowerCase();
-
-  // Simple keyword-based mock predictions
   if (lowerText.includes("sick") || lowerText.includes("smell")) {
-    mainCategories[1].probability = 85.3 + Math.random() * 10;
-    mainCategories[0].probability = 8.2 + Math.random() * 5;
-    subCategories[4].probability = 82.1 + Math.random() * 10;
-    subCategories[0].probability = 12.3 + Math.random() * 5;
-  } else if (lowerText.includes("flavor") || lowerText.includes("taste") || lowerText.includes("overcooked")) {
-    mainCategories[0].probability = 88.5 + Math.random() * 8;
-    mainCategories[3].probability = 7.1 + Math.random() * 4;
-    subCategories[0].probability = 89.2 + Math.random() * 8;
-    subCategories[1].probability = 6.8 + Math.random() * 3;
-  } else if (lowerText.includes("catered") || lowerText.includes("wrong") || lowerText.includes("incorrect")) {
-    mainCategories[2].probability = 91.2 + Math.random() * 6;
-    mainCategories[0].probability = 5.3 + Math.random() * 3;
-    subCategories[5].probability = 87.6 + Math.random() * 8;
-    subCategories[0].probability = 8.1 + Math.random() * 4;
-  } else if (lowerText.includes("beverage") || lowerText.includes("drink") || lowerText.includes("insufficient")) {
-    mainCategories[4].probability = 84.7 + Math.random() * 10;
-    mainCategories[0].probability = 9.2 + Math.random() * 5;
-    subCategories[6].probability = 86.3 + Math.random() * 9;
-    subCategories[2].probability = 7.9 + Math.random() * 4;
+    mainCategories[1].probability = 90;
+    subCategories[4].probability = 85;
+  } else if (lowerText.includes("flavor") || lowerText.includes("taste")) {
+    mainCategories[0].probability = 88;
+    subCategories[0].probability = 86;
+  } else if (lowerText.includes("catered")) {
+    mainCategories[2].probability = 92;
+    subCategories[5].probability = 88;
   } else {
-    // Default prediction
-    mainCategories[0].probability = 75.0 + Math.random() * 15;
-    mainCategories[3].probability = 15.0 + Math.random() * 8;
-    subCategories[0].probability = 70.0 + Math.random() * 20;
-    subCategories[3].probability = 18.0 + Math.random() * 10;
+    mainCategories[3].probability = 80;
+    subCategories[2].probability = 75;
   }
 
-  // Fill in remaining probabilities
-  mainCategories.forEach(cat => {
-    if (cat.probability === 0) cat.probability = Math.random() * 5;
-  });
-  subCategories.forEach(cat => {
-    if (cat.probability === 0) cat.probability = Math.random() * 5;
-  });
-
-  // Sort by probability
   mainCategories.sort((a, b) => b.probability - a.probability);
   subCategories.sort((a, b) => b.probability - a.probability);
 
-  return {
-    mainPredictions: mainCategories,
-    subPredictions: subCategories,
-  };
+  return { mainPredictions: mainCategories, subPredictions: subCategories };
 }
 
-const API_URL = "https://feedback-webapp-5zc2.onrender.com";
-
-// API helper functions
+// --- API Helpers ---
 async function checkHealth() {
   try {
-    const response = await fetch(`${API_URL}/health`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) throw new Error('Health check failed');
+    const response = await fetch(`${API_URL}/health`);
+    if (!response.ok) throw new Error("Health check failed");
     return await response.json();
-  } catch (error) {
-    return { status: 'offline', model_loaded: false };
+  } catch {
+    return { status: "offline", model_loaded: false };
   }
 }
 
 async function predictText(text: string) {
   const response = await fetch(`${API_URL}/predict`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-  if (!response.ok) throw new Error('Prediction failed');
+  if (!response.ok) throw new Error("Prediction failed");
   return await response.json();
 }
 
 export default function App() {
   const [commentText, setCommentText] = useState("");
-  const [predictions, setPredictions] = useState<{
-    mainPredictions: any[];
-    subPredictions: any[];
-  } | null>(null);
+  const [predictions, setPredictions] = useState<any | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
+
+  // Separate status checks
+  const [apiConnected, setApiConnected] = useState<"checking" | "online" | "offline">("checking");
+  const [modelConnected, setModelConnected] = useState<"checking" | "online" | "offline">("checking");
+
   const [useMockData, setUseMockData] = useState(true);
 
-  // Check API health on mount
   useEffect(() => {
     checkApiHealth();
   }, []);
 
   const checkApiHealth = async () => {
-    try {
-      const health = await checkHealth();
-      if (health.status === "healthy" && health.model_loaded) {
-        setApiStatus("online");
-        setUseMockData(false);
-      } else {
-        setApiStatus("offline");
-        setUseMockData(true);
-      }
-    } catch (error) {
-      setApiStatus("offline");
+    const health = await checkHealth();
+
+    // API connected if reachable
+    if (health.status === "healthy") setApiConnected("online");
+    else setApiConnected("offline");
+
+    // Model connected if model_loaded = true
+    if (health.model_loaded === true) {
+      setModelConnected("online");
+      setUseMockData(false);
+    } else {
+      setModelConnected("offline");
       setUseMockData(true);
     }
   };
 
   const predictComment = async (text: string) => {
-    if (useMockData) {
-      return predictCommentMock(text);
-    }
+    if (useMockData) return predictCommentMock(text);
 
     try {
-      const result = await predictText(text);
-      return result;
-    } catch (error) {
-      console.error("API prediction failed, using mock data:", error);
+      return await predictText(text);
+    } catch {
+      console.warn("Prediction failed, falling back to mock");
       return predictCommentMock(text);
     }
   };
@@ -158,12 +124,11 @@ export default function App() {
     }
 
     setIsAnalyzing(true);
-    
     try {
       const result = await predictComment(commentText);
       setPredictions(result);
-    } catch (error) {
-      alert("Failed to analyze feedback. Please try again.");
+    } catch {
+      alert("Failed to analyze feedback.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -184,45 +149,74 @@ export default function App() {
               <Brain className="w-8 h-8 text-foreground" />
             </div>
             <div>
-              <h1 className="text-foreground">FCR Feedback Categorization</h1>
+              <h1 className="text-foreground text-xl font-semibold">
+                FCR Feedback Categorization
+              </h1>
               <p className="text-muted-foreground">
                 AI-powered classification of feedback into structured categories
               </p>
             </div>
           </div>
-          
+
+          {/* Badges */}
           <div className="flex flex-wrap gap-2 items-center">
             <Badge variant="outline">Fine-tuned BERT</Badge>
             <Badge variant="outline">Multi-category Output</Badge>
             <Badge variant="outline">Version 2.2</Badge>
-            
-            {apiStatus === "checking" && (
+
+            {/* --- API Status --- */}
+            {apiConnected === "checking" && (
               <Badge variant="secondary" className="gap-1">
                 <span className="animate-pulse">●</span> Checking API...
               </Badge>
             )}
-            {apiStatus === "online" && (
-              <Badge variant="default" className="bg-green-600 hover:bg-green-700 gap-1">
+            {apiConnected === "online" && (
+              <Badge
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 gap-1"
+              >
                 <span>●</span> API Connected
               </Badge>
             )}
-            {apiStatus === "offline" && (
+            {apiConnected === "offline" && (
               <Badge variant="secondary" className="gap-1">
-                <AlertCircle className="w-3 h-3" /> Using Demo Mode
+                <AlertCircle className="w-3 h-3" /> API Offline
+              </Badge>
+            )}
+
+            {/* --- Model Status --- */}
+            {modelConnected === "checking" && (
+              <Badge variant="secondary" className="gap-1">
+                <span className="animate-pulse">●</span> Checking Model...
+              </Badge>
+            )}
+            {modelConnected === "online" && (
+              <Badge
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 gap-1"
+              >
+                <span>●</span> Model Loaded
+              </Badge>
+            )}
+            {modelConnected === "offline" && (
+              <Badge variant="secondary" className="gap-1">
+                <AlertCircle className="w-3 h-3" /> Model Offline
               </Badge>
             )}
           </div>
         </div>
 
-        {/* API Status Alert */}
-        {apiStatus === "offline" && (
+        {/* Alert when offline */}
+        {(apiConnected === "offline" || modelConnected === "offline") && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Backend API is not connected. Using demo mode with mock predictions. 
-              To use the real model, start the Python API server. 
-              <Button 
-                variant="link" 
+              {apiConnected === "offline"
+                ? "API is not reachable."
+                : "Model not loaded on server."}{" "}
+              Using demo predictions.{" "}
+              <Button
+                variant="link"
                 className="p-0 h-auto ml-1"
                 onClick={checkApiHealth}
               >
@@ -232,7 +226,7 @@ export default function App() {
           </Alert>
         )}
 
-        {/* Main Content */}
+        {/* Tabs */}
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="home" className="flex items-center gap-2">
@@ -249,7 +243,7 @@ export default function App() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Home Tab */}
+          {/* Analyze Tab */}
           <TabsContent value="home" className="space-y-6">
             <SampleComments onSelectSample={handleSelectSample} />
 
@@ -262,20 +256,18 @@ export default function App() {
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="Example: 'The burger was juicy and perfectly cooked.'"
+                  placeholder="Example: 'The burger was cold and soggy.'"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   className="min-h-[120px] mb-4"
                 />
-                <Button 
+                <Button
                   onClick={handleAnalyze}
                   disabled={isAnalyzing}
                   className="w-full"
                 >
                   {isAnalyzing ? (
-                    <>
-                      <span className="animate-pulse">Analyzing...</span>
-                    </>
+                    <span className="animate-pulse">Analyzing...</span>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
@@ -292,7 +284,7 @@ export default function App() {
                         Prediction complete! Results displayed below.
                       </AlertDescription>
                     </Alert>
-                    <PredictionCard 
+                    <PredictionCard
                       mainPredictions={predictions.mainPredictions}
                       subPredictions={predictions.subPredictions}
                     />
@@ -313,14 +305,9 @@ export default function App() {
                   View category trends and feedback distributions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Analytics will appear after bulk uploads are processed.</p>
-                  <p className="text-sm mt-2">
-                    Upload CSV files to see distribution charts and trend analysis.
-                  </p>
-                </div>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Analytics will appear after bulk uploads are processed.</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -336,116 +323,11 @@ export default function App() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool uses a fine-tuned <strong>BERT-based model</strong> to classify 
-                  feedback into <strong>main</strong> and <strong>subcategory</strong> labels, 
-                  helping operations teams identify key trends quickly and accurately.
+                  This tool uses a fine-tuned <strong>BERT model</strong> to
+                  classify feedback into <strong>main</strong> and{" "}
+                  <strong>subcategories</strong>, helping operations teams
+                  identify key trends quickly and accurately.
                 </p>
-
-                {/* Elementary Explanation */}
-                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">What Does This Model Do? (In Simple Terms)</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Imagine you have thousands of customer feedback comments to read. This AI model 
-                    acts like a super-fast reader that can:
-                  </p>
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-chart-1/20 flex items-center justify-center">
-                        <span>📖</span>
-                      </div>
-                      <div>
-                        <h4>Read and Understand</h4>
-                        <p className="text-sm text-muted-foreground">
-                          It reads each comment and understands what the customer is talking about, 
-                          just like a human would.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-chart-2/20 flex items-center justify-center">
-                        <span>🏷️</span>
-                      </div>
-                      <div>
-                        <h4>Put Labels on Comments</h4>
-                        <p className="text-sm text-muted-foreground">
-                          It automatically assigns labels to each comment. For example, "The food was cold" 
-                          might get labeled as "Food Quality" (main category) and "Temperature Problems" (subcategory).
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-chart-3/20 flex items-center justify-center">
-                        <span>⚡</span>
-                      </div>
-                      <div>
-                        <h4>Work Super Fast</h4>
-                        <p className="text-sm text-muted-foreground">
-                          What might take a person hours to categorize, this model can do in seconds—even 
-                          for thousands of comments at once.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <div className="shrink-0 w-8 h-8 rounded-full bg-chart-4/20 flex items-center justify-center">
-                        <span>🎯</span>
-                      </div>
-                      <div>
-                        <h4>Show Confidence Levels</h4>
-                        <p className="text-sm text-muted-foreground">
-                          The model tells you how confident it is about each prediction. A 95% confidence 
-                          means it's very sure, while 60% means it's less certain.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-3 rounded bg-muted/50">
-                    <p className="text-sm">
-                      <strong>Think of it like this:</strong> If you sort your emails into folders automatically, 
-                      this model does the same thing for customer feedback, but it's much smarter because 
-                      it actually understands what people are saying!
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Model Architecture</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Fine-tuned BERT with two classification heads for simultaneous 
-                      main category and subcategory prediction.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Use Cases</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Ideal for categorizing customer feedback, support tickets, 
-                      and operational reports at scale.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Technology Stack</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Built with TensorFlow, Keras, and React. Optimized for 
-                      real-time inference and batch processing.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Version Info</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Current version: 2.2<br />
-                      Last updated: October 2025
-                    </p>
-                  </div>
-                </div>
-
-                
               </CardContent>
             </Card>
           </TabsContent>
