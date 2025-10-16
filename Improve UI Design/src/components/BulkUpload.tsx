@@ -56,17 +56,21 @@ export function BulkUpload({ onPredict }: BulkUploadProps) {
       const headers = lines[0].split(',');
       
       // Find text column
-      const textColIndex = headers.findIndex(h => 
-        h.toLowerCase().includes('comment') || 
-        h.toLowerCase().includes('feedback') || 
-        h.toLowerCase().includes('review')
+      // 🧩 Find the correct text column
+      const cleanedHeaders = headers.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+      const textColIndex = cleanedHeaders.findIndex(h =>
+        ["text", "comment", "comments", "feedback", "review"].some(keyword => h.includes(keyword))
       );
-
+      
       if (textColIndex === -1) {
-        alert("Could not find a valid text column.");
+        console.warn("CSV headers detected:", headers);
+        alert("Could not find a valid text column. Make sure one column is named 'text', 'comment', or 'feedback'.");
         setProcessing(false);
         return;
       }
+
+console.log("✅ Using text column:", headers[textColIndex]);
+
 
       const processedResults = [];
       const dataLines = lines.slice(1);
