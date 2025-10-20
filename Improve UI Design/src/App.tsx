@@ -417,7 +417,7 @@ export default function App() {
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-4">
-                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Quality", "Catering Error") and <strong>Subcategory</strong> (e.g., "Taste Issues", "Incorrect Meal").
+                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Issue", "Missing") and <strong>Subcategory</strong> (e.g., "Food Safety", "Incorrect Meal").
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
                     <li>📖 <strong>Contextual Analysis</strong> — Understands industry-specific language and nuance.</li>
