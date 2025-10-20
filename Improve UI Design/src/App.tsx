@@ -405,71 +405,73 @@ export default function App() {
               <CardHeader>
                 <CardTitle>About This Tool</CardTitle>
                 <CardDescription>
-                  Learn more about the FCR Feedback Categorization model
+                  A project by <strong>Patrisiya Rumyantseva</strong> to automate feedback classification.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool uses a fine-tuned <strong>BERT-based model</strong> to classify
-                  feedback into <strong>main</strong> and <strong>subcategory</strong> labels,
-                  helping operations teams identify key trends quickly and accurately.
+                  This tool was created to solve a specific business challenge: manually processing thousands of 
+                  <strong> negative comments from Delta crew members about their crew meals</strong>.
+                  Previously, this task was handled by employees who read and categorized each comment by hand,
+                  a process that was incredibly time-consuming and inefficient.
                 </p>
 
                 {/* --- What Does This Model Do --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">What Does This Model Do? (In Simple Terms)</h3>
+                  <h3 className="mb-3">What Does This Model Do?</h3>
                   <p className="text-muted-foreground mb-4">
-                    Imagine you have thousands of feedback comments. This AI model acts like a
-                    super-fast reader that can:
+                    This model automates that manual process. It reads and understands the context of each 
+                    crew meal comment and automatically classifies it into a relevant **Main Category** (e.g., "Food Quality", "Missing Items") and **Subcategory** (e.g., "Taste Issues", "Wrong Order").
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>📖 <strong>Read and Understand</strong> — Understands customer intent in each comment.</li>
-                    <li>🏷️ <strong>Put Labels on Comments</strong> — Assigns structured categories.</li>
-                    <li>⚡ <strong>Work Super Fast</strong> — Processes thousands in seconds.</li>
-                    <li>🎯 <strong>Show Confidence Levels</strong> — Reports confidence for each prediction.</li>
+                    <li>📖 <strong>Reads Crew Comments</strong> — Understands industry-specific language.</li>
+                    <li>🏷️ <strong>Assigns Categories</strong> — Attaches a main and sub-category to each comment.</li>
+                    <li>⚡ <strong>Bulk Classifies</strong> — Processes thousands of comments from a single CSV in seconds.</li>
+                    <li>📈 <strong>Provides Confidence</strong> — Shows a probability score for each prediction.</li>
                   </ul>
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>Think of it like this:</strong> It’s like automatic email sorting, 
-                    but for customer feedback — faster, smarter, and fully contextual.
+                    <strong>The Goal:</strong> To instantly turn unstructured, negative feedback into 
+                    quantifiable data, saving hundreds of hours of manual work.
                   </div>
                 </div>
 
                 {/* --- How It Works --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">How It Works</h3>
+                  <h3 className="mb-3">How It Works (The Training)</h3>
                   <p className="text-muted-foreground mb-4">
-                    Here’s what happens behind the scenes for every comment or CSV entry:
+                    This model's accuracy comes from being **trained on real, historical data** that was 
+                    already classified by the expert team.
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>🧩 <strong>1. Tokenization</strong> — Text is broken into tokens using a BERT tokenizer.</li>
-                    <li>🧠 <strong>2. Embedding Generation</strong> — Tokens are transformed into numerical embeddings.</li>
-                    <li>🏗️ <strong>3. Dual Classification Heads</strong> — Two parallel neural layers predict main and subcategories.</li>
-                    <li>📊 <strong>4. Confidence Calculation</strong> — Probabilities are computed for each label.</li>
+                    <li>🧩 <strong>1. Real Data</strong> — Used the dataset of comments manually categorized by the team.</li>
+                    <li>🧠 <strong>2. Fine-Tuned BERT</strong> — A powerful language model (BERT) was re-trained to understand the specific patterns and vocabulary of crew meal feedback.</li>
+                    <li>🏗️ <strong>3. Dual Classification</strong> — The model has two "brains" (classification heads) that predict the main and sub-category simultaneously.</li>
+                    <li>📊 <strong>4. Validation</strong> — The model was tested against human classifications to ensure high accuracy.</li>
                   </ul>
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>In short:</strong> The model reads, understands, and classifies each comment 
-                    just like a human — only much faster.
+                    <strong>In short:</strong> This model learned from the experts and now replicates their 
+                    work at a fraction of the time.
                   </div>
                 </div>
 
                 {/* --- Model Info Grid --- */}
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Model Architecture</h4>
+                    <h4 className="mb-2">Project Owner</h4>
                     <p className="text-sm text-muted-foreground">
-                      Fine-tuned BERT with two classification heads for main and subcategory prediction.
+                      Patrisiya Rumyantseva
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Use Cases</h4>
+                    <h4 className="mb-2">Business Use Case</h4>
                     <p className="text-sm text-muted-foreground">
-                      Ideal for categorizing feedback, support tickets, and operational reports.
+                      Automating the categorization of negative Delta crew meal feedback to identify operational trends.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
                     <h4 className="mb-2">Technology Stack</h4>
                     <p className="text-sm text-muted-foreground">
-                      Built with TensorFlow, Keras, and React. Optimized for real-time inference and batch processing.
+                      TensorFlow/Keras (Model), BERT (Base), React (Frontend), FastAPI (Backend).
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
