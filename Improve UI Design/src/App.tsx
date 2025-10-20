@@ -130,6 +130,15 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     );
   }
 
+  // Define styles for dark mode
+  const labelColor = "var(--muted-foreground)"; // Use a readable color from your CSS
+  const tooltipStyle = {
+    backgroundColor: "var(--background)", // Use app's background
+    color: "var(--foreground)",         // Use app's text color
+    border: "1px solid var(--border)",   // Use app's border
+    borderRadius: "var(--radius)",     // Use app's border radius
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -140,11 +149,29 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={mainCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <XAxis dataKey="name" fontSize={12} interval={0} angle={-30} textAnchor="end" height={80} />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="var(--color-chart-1)" name="Count" />
+              <XAxis 
+                dataKey="name" 
+                fontSize={12} 
+                interval={0} 
+                angle={-30} 
+                textAnchor="end" 
+                height={80} 
+                tick={{ fill: labelColor }} // Make X-axis text readable
+              />
+              <YAxis 
+                allowDecimals={false} 
+                tick={{ fill: labelColor }} // Make Y-axis text readable
+              />
+              <Tooltip 
+                contentStyle={tooltipStyle} // Style the tooltip
+                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
+              />
+              <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
+              <Bar 
+                dataKey="count" 
+                fill="#8884d8" // Use a static color that works on dark bg
+                name="Count" 
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -158,11 +185,29 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <XAxis dataKey="name" fontSize={12} interval={0} angle={-30} textAnchor="end" height={80} />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="var(--color-chart-2)" name="Count" />
+              <XAxis 
+                dataKey="name" 
+                fontSize={12} 
+                interval={0} 
+                angle={-30} 
+                textAnchor="end" 
+                height={80} 
+                tick={{ fill: labelColor }} // Make X-axis text readable
+              />
+              <YAxis 
+                allowDecimals={false} 
+                tick={{ fill: labelColor }} // Make Y-axis text readable
+              />
+              <Tooltip 
+                contentStyle={tooltipStyle} // Style the tooltip
+                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
+              />
+              <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
+              <Bar 
+                dataKey="count" 
+                fill="#82ca9d" // Use a different static color
+                name="Count" 
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
