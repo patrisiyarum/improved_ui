@@ -109,28 +109,28 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={mainCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <XAxis 
-                dataKey="name" 
-                fontSize={12} 
-                interval={0} 
-                angle={-30} 
-                textAnchor="end" 
-                height={80} 
+              <XAxis
+                dataKey="name"
+                fontSize={12}
+                interval={0}
+                angle={-30}
+                textAnchor="end"
+                height={80}
                 tick={{ fill: labelColor }} // Make X-axis text readable
               />
-              <YAxis 
-                allowDecimals={false} 
+              <YAxis
+                allowDecimals={false}
                 tick={{ fill: labelColor }} // Make Y-axis text readable
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={tooltipStyle} // Style the tooltip
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
               />
               <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
-              <Bar 
-                dataKey="count" 
+              <Bar
+                dataKey="count"
                 fill="#8884d8" // Use a static color that works on dark bg
-                name="Count" 
+                name="Count"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -145,28 +145,28 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <XAxis 
-                dataKey="name" 
-                fontSize={12} 
-                interval={0} 
-                angle={-30} 
-                textAnchor="end" 
-                height={80} 
+              <XAxis
+                dataKey="name"
+                fontSize={12}
+                interval={0}
+                angle={-30}
+                textAnchor="end"
+                height={80}
                 tick={{ fill: labelColor }} // Make X-axis text readable
               />
-              <YAxis 
-                allowDecimals={false} 
+              <YAxis
+                allowDecimals={false}
                 tick={{ fill: labelColor }} // Make Y-axis text readable
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={tooltipStyle} // Style the tooltip
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
               />
               <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
-              <Bar 
-                dataKey="count" 
+              <Bar
+                dataKey="count"
                 fill="#82ca9d" // Use a different static color
-                name="Count" 
+                name="Count"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -234,7 +234,7 @@ export default function App() {
     setCommentText(text);
     setPredictions(null);
   };
-  
+
   // New callback function to receive results from BulkUpload
   const handleBulkUploadComplete = (results: any[]) => {
     setBulkResults(results as BulkResultRow[]);
@@ -339,9 +339,9 @@ export default function App() {
                 )}
               </CardContent>
             </Card>
-            <BulkUpload 
-              onPredict={predictComment} 
-              onUploadComplete={handleBulkUploadComplete} 
+            <BulkUpload
+              onPredict={predictComment}
+              onUploadComplete={handleBulkUploadComplete}
             />
           </TabsContent>
 
@@ -361,12 +361,10 @@ export default function App() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>. 
-
+                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
                 </p>
-                
-                </p>
-                Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
+                <p>
+                  Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
                 </p>
 
                 {/* --- What Does This Model Do --- */}
@@ -438,3 +436,4 @@ export default function App() {
     </div>
   );
 }
+
