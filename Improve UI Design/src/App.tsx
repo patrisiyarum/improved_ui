@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 import { Button } from "./components/ui/button";
@@ -9,6 +9,7 @@ import { Brain, BarChart3, Info, Sparkles, CheckCircle2, AlertCircle } from "luc
 import { PredictionCard } from "./components/PredictionCard";
 import { SampleComments } from "./components/SampleComments";
 import { BulkUpload } from "./components/BulkUpload";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
 
@@ -73,6 +74,104 @@ async function predictText(text: string) {
   return await response.json();
 }
 
+// --- Define types for results ---
+interface BulkResultRow {
+  Predicted_Main_Category: string;
+  Predicted_Subcategory: string;
+  [key: string]: any;
+}
+
+interface ChartData {
+  name: string;
+  count: number;
+}
+
+// --- AnalyticsDashboard Component ---
+function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
+  const mainCategoryData = useMemo(() => {
+    if (!results.length) return [];
+    const counts: { [key: string]: number } = {};
+    results.forEach(row => {
+      const category = row.Predicted_Main_Category || "Unknown";
+      counts[category] = (counts[category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  }, [results]);
+
+  const subCategoryData = useMemo(() => {
+    if (!results.length) return [];
+    const counts: { [key: string]: number } = {};
+    results.forEach(row => {
+      const category = row.Predicted_Subcategory || "Unknown";
+      counts[category] = (counts[category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  }, [results]);
+
+  if (!results.length) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Analytics Dashboard</CardTitle>
+          <CardDescription>
+            View category trends and feedback distributions
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="py-12">
+          <div className="text-center text-muted-foreground">
+            <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>No data to display.</p>
+            <p className="text-sm mt-2">
+              Upload a CSV file on the "Analyze" tab to see your charts.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Main Category Distribution</CardTitle>
+          <CardDescription>Based on {results.length} processed rows.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={mainCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <XAxis dataKey="name" fontSize={12} interval={0} angle={-30} textAnchor="end" height={80} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="var(--color-chart-1)" name="Count" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Subcategory Distribution</CardTitle>
+          <CardDescription>Based on {results.length} processed rows.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <XAxis dataKey="name" fontSize={12} interval={0} angle={-30} textAnchor="end" height={80} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="var(--color-chart-2)" name="Count" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 // --- Main App ---
 export default function App() {
   const [commentText, setCommentText] = useState("");
@@ -82,6 +181,7 @@ export default function App() {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [checking, setChecking] = useState(true);
   const [useMockData, setUseMockData] = useState(true);
+  const [bulkResults, setBulkResults] = useState<BulkResultRow[]>([]); // New state for analytics
 
   useEffect(() => {
     checkApiHealth();
@@ -137,6 +237,12 @@ export default function App() {
   const handleSelectSample = (text: string) => {
     setCommentText(text);
     setPredictions(null);
+  };
+  
+  // New callback function to receive results from BulkUpload
+  const handleBulkUploadComplete = (results: any[]) => {
+    setBulkResults(results as BulkResultRow[]);
+    alert("Bulk upload complete! Check the 'Analytics' tab for charts.");
   };
 
   return (
@@ -237,28 +343,15 @@ export default function App() {
                 )}
               </CardContent>
             </Card>
-            <BulkUpload onPredict={predictComment} />
+            <BulkUpload 
+              onPredict={predictComment} 
+              onUploadComplete={handleBulkUploadComplete} 
+            />
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics Dashboard</CardTitle>
-                <CardDescription>
-                  View category trends and feedback distributions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Analytics will appear after bulk uploads are processed.</p>
-                  <p className="text-sm mt-2">
-                    Upload CSV files to see distribution charts and trend analysis.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
           {/* About Tab */}
