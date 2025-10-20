@@ -13,46 +13,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } fro
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
 
-// --- Mock prediction (fallback) ---
-function predictCommentMock(text: string) {
-  const mainCategories = [
-    { label: "Food Quality", probability: 0 },
-    { label: "Food Safety", probability: 0 },
-    { label: "Catering Error", probability: 0 },
-    { label: "Service Issue", probability: 0 },
-    { label: "Missing Items", probability: 0 },
-  ];
-  const subCategories = [
-    { label: "Taste Issues", probability: 0 },
-    { label: "Temperature Problems", probability: 0 },
-    { label: "Portion Size", probability: 0 },
-    { label: "Presentation", probability: 0 },
-    { label: "Hygiene Concerns", probability: 0 },
-    { label: "Wrong Order", probability: 0 },
-    { label: "Beverage Issues", probability: 0 },
-  ];
-
-  const lowerText = text.toLowerCase();
-  if (lowerText.includes("sick") || lowerText.includes("smell")) {
-    mainCategories[1].probability = 88;
-    subCategories[4].probability = 82;
-  } else if (lowerText.includes("flavor") || lowerText.includes("taste")) {
-    mainCategories[0].probability = 86;
-    subCategories[0].probability = 84;
-  } else if (lowerText.includes("catered")) {
-    mainCategories[2].probability = 90;
-    subCategories[5].probability = 86;
-  } else {
-    mainCategories[3].probability = 78;
-    subCategories[2].probability = 74;
-  }
-
-  mainCategories.sort((a, b) => b.probability - a.probability);
-  subCategories.sort((a, b) => b.probability - a.probability);
-
-  return { mainPredictions: mainCategories, subPredictions: subCategories };
-}
-
 // --- API helpers ---
 async function checkHealth() {
   try {
@@ -225,7 +185,6 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [useMockData, setUseMockData] = useState(true);
   const [bulkResults, setBulkResults] = useState<BulkResultRow[]>([]); // New state for analytics
 
   useEffect(() => {
@@ -239,28 +198,20 @@ export default function App() {
       if (health.status === "healthy") {
         setApiOnline(true);
         setModelLoaded(!!health.model_loaded);
-        setUseMockData(!health.model_loaded);
       } else {
         setApiOnline(false);
         setModelLoaded(false);
-        setUseMockData(true);
       }
     } catch {
       setApiOnline(false);
       setModelLoaded(false);
-      setUseMockData(true);
     } finally {
       setChecking(false);
     }
   };
 
   const predictComment = async (text: string) => {
-    if (useMockData) return predictCommentMock(text);
-    try {
-      return await predictText(text);
-    } catch {
-      return predictCommentMock(text);
-    }
+    return await predictText(text);
   };
 
   const handleAnalyze = async () => {
@@ -335,11 +286,11 @@ export default function App() {
           </div>
         </div>
 
-        {!apiOnline && (
+        {!modelLoaded && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Backend API is offline or model unavailable. Using demo mode.
+              Backend API is offline or the model is unavailable. Analysis is currently disabled.
               <Button variant="link" className="p-0 h-auto ml-1" onClick={checkApiHealth}>
                 Retry connection
               </Button>
@@ -370,8 +321,8 @@ export default function App() {
                   onChange={(e) => setCommentText(e.target.value)}
                   className="min-h-[120px] mb-4"
                 />
-                <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full">
-                  {isAnalyzing ? "Analyzing..." : "Analyze Feedback"}
+                <Button onClick={handleAnalyze} disabled={isAnalyzing || !modelLoaded} className="w-full">
+                  {isAnalyzing ? "Analyzing..." : modelLoaded ? "Analyze Feedback" : "Model Unavailable"}
                 </Button>
 
                 {predictions && (
@@ -417,7 +368,7 @@ export default function App() {
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-4">
-                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Issue", "Missing") and <strong>Subcategory</strong> (e.g., "Food Safety", "Incorrect Meal").
+                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Quality", "Catering Error") and <strong>Subcategory</strong> (e.g., "Taste Issues", "Incorrect Meal").
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
                     <li>📖 <strong>Contextual Analysis</strong> — Understands industry-specific language and nuance.</li>
