@@ -7,9 +7,10 @@ import { Upload, Download, CheckCircle2 } from "lucide-react";
 
 interface BulkUploadProps {
   onPredict: (text: string) => Promise<{ mainPredictions: any[]; subPredictions: any[] }>;
+  onUploadComplete: (results: any[]) => void; // Added this callback
 }
 
-export function BulkUpload({ onPredict }: BulkUploadProps) {
+export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -102,6 +103,7 @@ console.log("✅ Using text column:", headers[textColIndex]);
       }
 
       setResults(processedResults);
+      onUploadComplete(processedResults); // Pass results back to parent
       setProcessing(false);
     };
     
