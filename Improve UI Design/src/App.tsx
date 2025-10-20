@@ -302,7 +302,7 @@ export default function App() {
             <div>
               <h1 className="text-foreground text-2xl font-semibold">FCR Feedback Categorization</h1>
               <p className="text-muted-foreground">
-                AI-powered classification of feedback into structured categories
+                An AI-powered solution for strategic feedback analysis.
               </p>
             </div>
           </div>
@@ -405,52 +405,45 @@ export default function App() {
               <CardHeader>
                 <CardTitle>About This Tool</CardTitle>
                 <CardDescription>
-                  A project by <strong>Patrisiya Rumyantseva</strong> to automate feedback classification.
+                  A project by <strong>Patrisiya Rumyantseva</strong> to automate and scale operational feedback analysis.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool was created to solve a specific business challenge: manually processing thousands of 
-                  <strong> negative comments from Delta crew members about their crew meals</strong>.
-                  Previously, this task was handled by employees who read and categorized each comment by hand,
-                  a process that was incredibly time-consuming and inefficient.
+                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>. Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
                 </p>
 
                 {/* --- What Does This Model Do --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">What Does This Model Do?</h3>
+                  <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-4">
-                    This model automates that manual process. It reads and understands the context of each 
-                    crew meal comment and automatically classifies it into a relevant **Main Category** (e.g., "Food Quality", "Missing Items") and **Subcategory** (e.g., "Taste Issues", "Wrong Order").
+                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Quality", "Catering Error") and <strong>Subcategory</strong> (e.g., "Taste Issues", "Incorrect Meal").
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>📖 <strong>Reads Crew Comments</strong> — Understands industry-specific language.</li>
-                    <li>🏷️ <strong>Assigns Categories</strong> — Attaches a main and sub-category to each comment.</li>
-                    <li>⚡ <strong>Bulk Classifies</strong> — Processes thousands of comments from a single CSV in seconds.</li>
-                    <li>📈 <strong>Provides Confidence</strong> — Shows a probability score for each prediction.</li>
+                    <li>📖 <strong>Contextual Analysis</strong> — Understands industry-specific language and nuance.</li>
+                    <li>🏷️ <strong>Structured Classification</strong> — Assigns a main and sub-category to each piece of feedback.</li>
+                    <li>⚡ <strong>High-Volume Processing</strong> — Classifies thousands of comments from a CSV file in seconds.</li>
+                    <li>📈 <strong>Confidence Scoring</strong> — Provides a probability score for each classification to aid in analysis.</li>
                   </ul>
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>The Goal:</strong> To instantly turn unstructured, negative feedback into 
-                    quantifiable data, saving hundreds of hours of manual work.
+                    <strong>The strategic value:</strong> To convert unstructured, critical feedback into structured, actionable data at scale, significantly reducing manual effort and accelerating insight generation.
                   </div>
                 </div>
 
                 {/* --- How It Works --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">How It Works (The Training)</h3>
+                  <h3 className="mb-3">Model Development & Training</h3>
                   <p className="text-muted-foreground mb-4">
-                    This model's accuracy comes from being **trained on real, historical data** that was 
-                    already classified by the expert team.
+                    The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
                   </p>
                   <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>🧩 <strong>1. Real Data</strong> — Used the dataset of comments manually categorized by the team.</li>
-                    <li>🧠 <strong>2. Fine-Tuned BERT</strong> — A powerful language model (BERT) was re-trained to understand the specific patterns and vocabulary of crew meal feedback.</li>
-                    <li>🏗️ <strong>3. Dual Classification</strong> — The model has two "brains" (classification heads) that predict the main and sub-category simultaneously.</li>
-                    <li>📊 <strong>4. Validation</strong> — The model was tested against human classifications to ensure high accuracy.</li>
+                    <li>🧩 <strong>1. Historical Data Utilization</strong> — Leveraged the existing dataset of manually categorized comments as the source of truth.</li>
+                    <li>🧠 <strong>2. Fine-Tuned BERT Model</strong> — A state-of-the-art language model (BERT) was specifically trained to recognize the unique patterns and terminology present in crew meal feedback.</li>
+                    <li>🏗️ <strong>3. Dual-Output Architecture</strong> — The model was designed with two parallel classification heads to predict both the main and sub-category simultaneously, ensuring contextual relevance.</li>
+                    <li>📊 <strong>4. Performance Validation</strong> — The model's predictions were rigorously tested against human classifications to ensure a high degree of accuracy and reliability.</li>
                   </ul>
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>In short:</strong> This model learned from the experts and now replicates their 
-                    work at a fraction of the time.
+                    <strong>In essence:</strong> The model has learned from human expertise and now replicates that classification capability with vastly superior speed and scalability.
                   </div>
                 </div>
 
@@ -463,19 +456,19 @@ export default function App() {
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Business Use Case</h4>
+                    <h4 className="mb-2">Business Application</h4>
                     <p className="text-sm text-muted-foreground">
-                      Automating the categorization of negative Delta crew meal feedback to identify operational trends.
+                      Automated classification of critical feedback on Delta on-board crew meals for trend analysis and operational improvement.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
                     <h4 className="mb-2">Technology Stack</h4>
                     <p className="text-sm text-muted-foreground">
-                      TensorFlow/Keras (Model), BERT (Base), React (Frontend), FastAPI (Backend).
+                      TensorFlow/Keras (Model), BERT (Base Architecture), React (UI), FastAPI (API).
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Version Info</h4>
+                    <h4 className="mb-2">Version Information</h4>
                     <p className="text-sm text-muted-foreground">
                       Current version: 2.2<br />Last updated: October 2025
                     </p>
