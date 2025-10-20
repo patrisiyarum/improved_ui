@@ -361,7 +361,12 @@ export default function App() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>. Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
+                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>. 
+
+                </p>
+                
+                </p>
+                Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
                 </p>
 
                 {/* --- What Does This Model Do --- */}
