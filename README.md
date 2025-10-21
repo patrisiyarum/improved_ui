@@ -8,7 +8,7 @@ This frontend is built to communicate with a separate [FastAPI backend](https://
 
 ## Technology Stack
 
-This project is a modern frontend application built with:
+This project is a frontend application built with:
 
 * **Framework:** **React**
 * **Language:** **TypeScript**
