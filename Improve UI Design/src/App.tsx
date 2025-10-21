@@ -12,7 +12,6 @@ import { BulkUpload } from "./components/BulkUpload";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
-
 // --- API helpers ---
 async function checkHealth() {
   try {
