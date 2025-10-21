@@ -308,7 +308,7 @@ export default function App() {
 
           {/* Analyze Tab */}
           <TabsContent value="home">
-            <SampleComments onSelectSample={handleSelectSample} />
+           
             <Card>
               <CardHeader>
                 <CardTitle>Analyze Feedback</CardTitle>
