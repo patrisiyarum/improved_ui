@@ -310,6 +310,7 @@ export default function App() {
            
             <Card>
               <CardHeader>
+                <SampleComments onSelectSample={handleSelectSample} /> 
                 <CardTitle>Analyze Feedback</CardTitle>
                 <CardDescription>Enter a comment to classify it.</CardDescription>
               </CardHeader>
