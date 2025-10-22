@@ -5,7 +5,17 @@ import { Button } from "./components/ui/button";
 import { Textarea } from "./components/ui/textarea";
 import { Badge } from "./components/ui/badge";
 import { Alert, AlertDescription } from "./components/ui/alert";
-import { Brain, BarChart3, Info, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Brain,
+  BarChart3,
+  Info,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Tag,
+  Zap,
+  Percent,
+} from "lucide-react";
 import { PredictionCard } from "./components/PredictionCard";
 import { SampleComments } from "./components/SampleComments";
 import { BulkUpload } from "./components/BulkUpload";
@@ -371,18 +381,43 @@ export default function App() {
                 {/* --- What Does This Model Do --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
-                  <p className="text-muted-foreground mb-4">
-                    The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Quality", "Catering Error") and <strong>Subcategory</strong> (e.g., "Taste Issues", "Incorrect Meal").
+                  <p className="text-muted-foreground mb-6">
+                    The model automates the manual review process by analyzing each comment and classifying it into a relevant <strong>Main Category</strong> and <strong>Subcategory</strong>.
                   </p>
                   
-                  <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                    <li>Understands industry-specific language and nuance.</li>
-                    <li>Assigns a structured main and sub-category to each piece of feedback.</li>
-                    <li>Processes thousands of comments from a CSV file in seconds.</li>
-                    <li>Provides a probability score for each classification to aid in analysis.</li>
-                  </ul>
-                  
-                  <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
+                  {/* --- Icon Grid for Features --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Contextual Understanding</h4>
+                        <p className="text-sm text-muted-foreground">Learns and understands industry-specific language and nuance.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Tag className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Structured Output</h4>
+                        <p className="text-sm text-muted-foreground">Assigns a Main and Sub-category to each piece of feedback.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Zap className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">High-Volume Processing</h4>
+                        <p className="text-sm text-muted-foreground">Analyzes thousands of comments from a CSV file in seconds.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Percent className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Confidence Scoring</h4>
+                        <p className="text-sm text-muted-foreground">Provides a probability score for each prediction to aid in analysis.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
                     <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
                   </div>
                 </div>
@@ -390,18 +425,43 @@ export default function App() {
                 {/* --- How It Works --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Model Development & Training</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground mb-6">
                     The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
                   </p>
-                  
-                  <ol className="list-decimal list-inside space-y-3 text-sm text-muted-foreground">
-                    <li>The model was trained on the existing dataset of manually categorized comments, using them as the source of truth.</li>
-                    <li>A BERT language model was fine-tuned on this data to learn the specific patterns and terminology in the crew feedback.</li>
-                    <li>It was designed with a dual-output architecture to predict both the main and sub-category simultaneously.</li>
-                    <li>Finally, the model's predictions were rigorously tested against human classifications to ensure a high degree of accuracy.</li>
-                  </ol>
 
-                  <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
+                  {/* --- Visual Stepper for Process --- */}
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                      <div>
+                        <h4 className="font-medium">Historical Data Training</h4>
+                        <p className="text-sm text-muted-foreground">Trained on a "source of truth" dataset of human-classified comments.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                      <div>
+                        <h4 className="font-medium">Fine-Tuned BERT Model</h4>
+                        <p className="text-sm text-muted-foreground">A BERT model was trained to recognize specific patterns and terminology.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                      <div>
+                        <h4 className="font-medium">Dual-Output Architecture</h4>
+                        <p className="text-sm text-muted-foreground">Designed to predict both the Main and Sub-category simultaneously.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                      <div>
+                        <h4 className="font-medium">Performance Validation</h4>
+                        <p className="text-sm text-muted-foreground">Rigorously tested against human classifications to ensure accuracy.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
                     <strong>In short:</strong> The model learned from human expertise to replicate the same classification process, but with much greater speed and scale.
                   </div>
                 </div>
