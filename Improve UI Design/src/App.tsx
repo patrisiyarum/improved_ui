@@ -12,6 +12,7 @@ import { BulkUpload } from "./components/BulkUpload";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
+
 // --- API helpers ---
 async function checkHealth() {
   try {
@@ -307,7 +308,7 @@ export default function App() {
 
           {/* Analyze Tab */}
           <TabsContent value="home">
-           
+            
             <Card>
               <CardHeader>
                 <SampleComments onSelectSample={handleSelectSample} /> 
@@ -350,7 +351,7 @@ export default function App() {
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
-          {/* About Tab */}
+          {/* About Tab (REVISED) */}
           <TabsContent value="about">
             <Card>
               <CardHeader>
@@ -373,14 +374,16 @@ export default function App() {
                   <p className="text-muted-foreground mb-4">
                     The model automates the manual review process. It analyzes the context of each crew meal comment and classifies it into a relevant <strong>Main Category</strong> (e.g., "Food Quality", "Catering Error") and <strong>Subcategory</strong> (e.g., "Taste Issues", "Incorrect Meal").
                   </p>
-                  <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>📖 <strong>Contextual Analysis</strong> — Understands industry-specific language and nuance.</li>
-                    <li>🏷️ <strong>Structured Classification</strong> — Assigns a main and sub-category to each piece of feedback.</li>
-                    <li>⚡ <strong>High-Volume Processing</strong> — Classifies thousands of comments from a CSV file in seconds.</li>
-                    <li>📈 <strong>Confidence Scoring</strong> — Provides a probability score for each classification to aid in analysis.</li>
+                  
+                  <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                    <li>Understands industry-specific language and nuance.</li>
+                    <li>Assigns a structured main and sub-category to each piece of feedback.</li>
+                    <li>Processes thousands of comments from a CSV file in seconds.</li>
+                    <li>Provides a probability score for each classification to aid in analysis.</li>
                   </ul>
+                  
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>The strategic value:</strong> To convert unstructured, critical feedback into structured, actionable data at scale, significantly reducing manual effort and accelerating insight generation.
+                    <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
                   </div>
                 </div>
 
@@ -390,14 +393,16 @@ export default function App() {
                   <p className="text-muted-foreground mb-4">
                     The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
                   </p>
-                  <ul className="space-y-3 text-sm text-muted-foreground">
-                    <li>🧩 <strong>1. Historical Data Utilization</strong> — Leveraged the existing dataset of manually categorized comments as the source of truth.</li>
-                    <li>🧠 <strong>2. Fine-Tuned BERT Model</strong> — A state-of-the-art language model (BERT) was specifically trained to recognize the unique patterns and terminology present in crew meal feedback.</li>
-                    <li>🏗️ <strong>3. Dual-Output Architecture</strong> — The model was designed with two parallel classification heads to predict both the main and sub-category simultaneously, ensuring contextual relevance.</li>
-                    <li>📊 <strong>4. Performance Validation</strong> — The model's predictions were rigorously tested against human classifications to ensure a high degree of accuracy and reliability.</li>
-                  </ul>
+                  
+                  <ol className="list-decimal list-inside space-y-3 text-sm text-muted-foreground">
+                    <li>The model was trained on the existing dataset of manually categorized comments, using them as the source of truth.</li>
+                    <li>A BERT language model was fine-tuned on this data to learn the specific patterns and terminology in the crew feedback.</li>
+                    <li>It was designed with a dual-output architecture to predict both the main and sub-category simultaneously.</li>
+                    <li>Finally, the model's predictions were rigorously tested against human classifications to ensure a high degree of accuracy.</li>
+                  </ol>
+
                   <div className="mt-4 p-3 rounded bg-muted/50 text-sm">
-                    <strong>In essence:</strong> The model has learned from human expertise and now replicates that classification capability with vastly superior speed and scalability.
+                    <strong>In short:</strong> The model learned from human expertise to replicate the same classification process, but with much greater speed and scale.
                   </div>
                 </div>
 
@@ -436,4 +441,3 @@ export default function App() {
     </div>
   );
 }
-
