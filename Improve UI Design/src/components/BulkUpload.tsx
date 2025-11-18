@@ -56,20 +56,24 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       const lines = text.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',');
       
-      // Find text column
       // 🧩 Find the correct text column
       const cleanedHeaders = headers.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+      
+      // 👇 UPDATED: Added "pilot's questions/answers" to the list
       const textColIndex = cleanedHeaders.findIndex(h =>
-        ["text", "comment", "comments", "feedback", "review"].some(keyword => h.includes(keyword))
+        ["text", "comment", "comments", "feedback", "review", "pilot's questions/answers"].some(keyword => h.includes(keyword))
       );
       
       if (textColIndex === -1) {
         console.warn("CSV headers detected:", headers);
-        alert("Could not find a valid text column. Make sure one column is named 'text', 'comment', or 'feedback'.");
+        // Optional: Update the alert message to be more helpful
+        alert("Could not find a valid text column. Make sure one column is named 'text', 'comment', 'feedback', or 'Pilot's Questions/Answers'.");
         setProcessing(false);
         return;
       }
-
+      
+      
+    
 console.log("✅ Using text column:", headers[textColIndex]);
 
 
