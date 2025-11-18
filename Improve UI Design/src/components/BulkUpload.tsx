@@ -4,10 +4,11 @@ import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Upload, Download, CheckCircle2 } from "lucide-react";
+import Papa from "papaparse";
 
 interface BulkUploadProps {
   onPredict: (text: string) => Promise<{ mainPredictions: any[]; subPredictions: any[] }>;
-  onUploadComplete: (results: any[]) => void; // Added this callback
+  onUploadComplete: (results: any[]) => void;
 }
 
 export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
@@ -24,104 +25,114 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       setResults(null);
       setProgress(0);
       
-      // Parse CSV and show preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',');
-        const preview = lines.slice(1, 6).map(line => {
-          const values = line.split(',');
-          const obj: any = {};
-          headers.forEach((header, i) => {
-            obj[header.trim()] = values[i]?.trim() || '';
-          });
-          return obj;
-        });
-        setPreviewData(preview);
-      };
-      reader.readAsText(uploadedFile);
+      // Use PapaParse to preview safely
+      Papa.parse(uploadedFile, {
+        header: true,
+        preview: 5, // Only parse first 5 rows for preview
+        skipEmptyLines: true,
+        complete: (results) => {
+          // PapaParse returns data as an array of objects directly
+          setPreviewData(results.data as any[]);
+        },
+        error: (error) => {
+          console.error("Error parsing CSV:", error);
+          alert("Failed to read CSV file");
+        }
+      });
     }
   };
 
   const handleProcess = async () => {
-    if (!file || !previewData) return;
+    if (!file) return;
 
     setProcessing(true);
     setProgress(0);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',');
-      
-      // 🧩 Find the correct text column
-      const cleanedHeaders = headers.map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-      
-      // 👇 UPDATED: Added "pilot's questions/answers" to the list
-      const textColIndex = cleanedHeaders.findIndex(h =>
-        ["text", "comment", "comments", "feedback", "review", "pilot's questions/answers"].some(keyword => h.includes(keyword))
-      );
-      
-      if (textColIndex === -1) {
-        console.warn("CSV headers detected:", headers);
-        // Optional: Update the alert message to be more helpful
-        alert("Could not find a valid text column. Make sure one column is named 'text', 'comment', 'feedback', or 'Pilot's Questions/Answers'.");
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const data = results.data as any[];
+        // Safe check for headers
+        const headers = results.meta.fields || (data.length > 0 ? Object.keys(data[0]) : []);
+        
+        // 🧩 Find the correct text column (Case Insensitive)
+        const textCol = headers.find(h => 
+          ["text", "comment", "comments", "feedback", "review", "pilot's questions/answers"]
+            .some(keyword => h.toLowerCase().includes(keyword))
+        );
+        
+        if (!textCol) {
+          console.warn("CSV headers detected:", headers);
+          alert("Could not find a valid text column. Make sure one column is named 'text', 'comment', 'feedback', or 'Pilot's Questions/Answers'.");
+          setProcessing(false);
+          return;
+        }
+
+        console.log("✅ Using text column:", textCol);
+
+        const processedResults = [];
+
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          const commentText = row[textCol]?.trim() || '';
+          
+          // Skip empty rows if any slipped through
+          if (!commentText) continue;
+
+          try {
+            const { mainPredictions, subPredictions } = await onPredict(commentText);
+            
+            // Create new row with original data + predictions
+            const newRow = {
+              ...row,
+              'Predicted_Main_Category': mainPredictions[0]?.label || 'Unknown',
+              'Main_Category_Confidence': mainPredictions[0]?.probability 
+                ? `${mainPredictions[0].probability.toFixed(2)}%` 
+                : '0%',
+              'Predicted_Subcategory': subPredictions[0]?.label || 'Unknown',
+              'Subcategory_Confidence': subPredictions[0]?.probability 
+                ? `${subPredictions[0].probability.toFixed(2)}%` 
+                : '0%'
+            };
+            
+            processedResults.push(newRow);
+          } catch (err) {
+            console.error(`Error processing row ${i}:`, err);
+            // Optionally add error info to row
+            processedResults.push({
+              ...row,
+              'Predicted_Main_Category': 'Error',
+              'Main_Category_Confidence': '0%',
+              'Predicted_Subcategory': 'Error',
+              'Subcategory_Confidence': '0%'
+            });
+          }
+
+          // Update progress
+          setProgress(((i + 1) / data.length) * 100);
+          
+          // Small delay to allow UI updates
+          if (i % 5 === 0) await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        setResults(processedResults);
+        onUploadComplete(processedResults);
         setProcessing(false);
-        return;
+      },
+      error: (err) => {
+        console.error("Full parse error:", err);
+        alert("Error processing file");
+        setProcessing(false);
       }
-      
-      
-    
-console.log("✅ Using text column:", headers[textColIndex]);
-
-
-      const processedResults = [];
-      const dataLines = lines.slice(1);
-
-      for (let i = 0; i < dataLines.length; i++) {
-        const values = dataLines[i].split(',');
-        const commentText = values[textColIndex]?.trim() || '';
-        
-        const { mainPredictions, subPredictions } = await onPredict(commentText);
-        
-        const row: any = {};
-        headers.forEach((header, idx) => {
-          row[header.trim()] = values[idx]?.trim() || '';
-        });
-        row['Predicted_Main_Category'] = mainPredictions[0]?.label || 'Unknown';
-        row['Main_Category_Confidence'] = mainPredictions[0]?.probability 
-          ? `${mainPredictions[0].probability.toFixed(2)}%` 
-          : '0%';
-        row['Predicted_Subcategory'] = subPredictions[0]?.label || 'Unknown';
-        row['Subcategory_Confidence'] = subPredictions[0]?.probability 
-          ? `${subPredictions[0].probability.toFixed(2)}%` 
-          : '0%';
-        
-        processedResults.push(row);
-        setProgress(((i + 1) / dataLines.length) * 100);
-        
-        // Small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
-
-      setResults(processedResults);
-      onUploadComplete(processedResults); // Pass results back to parent
-      setProcessing(false);
-    };
-    
-    reader.readAsText(file);
+    });
   };
 
   const handleDownload = () => {
-    if (!results) return;
+    if (!results || results.length === 0) return;
 
-    const headers = Object.keys(results[0]);
-    const csv = [
-      headers.join(','),
-      ...results.map(row => headers.map(h => row[h]).join(','))
-    ].join('\n');
+    // Use PapaParse to unparse (JSON -> CSV) for safe export handling
+    const csv = Papa.unparse(results);
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -175,7 +186,7 @@ console.log("✅ Using text column:", headers[textColIndex]);
                 <thead className="bg-muted">
                   <tr>
                     {Object.keys(previewData[0]).map((header, idx) => (
-                      <th key={idx} className="px-4 py-2 text-left">
+                      <th key={idx} className="px-4 py-2 text-left whitespace-nowrap">
                         {header}
                       </th>
                     ))}
@@ -185,8 +196,9 @@ console.log("✅ Using text column:", headers[textColIndex]);
                   {previewData.map((row, idx) => (
                     <tr key={idx} className="border-t border-border">
                       {Object.values(row).map((value: any, cellIdx) => (
-                        <td key={cellIdx} className="px-4 py-2">
-                          {value}
+                        <td key={cellIdx} className="px-4 py-2 whitespace-nowrap">
+                          {/* Truncate long text for preview */}
+                          {String(value).length > 50 ? String(value).substring(0, 50) + '...' : value}
                         </td>
                       ))}
                     </tr>
@@ -229,7 +241,7 @@ console.log("✅ Using text column:", headers[textColIndex]);
                 <thead className="bg-muted">
                   <tr>
                     {Object.keys(results[0]).map((header, idx) => (
-                      <th key={idx} className="px-4 py-2 text-left">
+                      <th key={idx} className="px-4 py-2 text-left whitespace-nowrap">
                         {header}
                       </th>
                     ))}
@@ -239,8 +251,8 @@ console.log("✅ Using text column:", headers[textColIndex]);
                   {results.slice(0, 5).map((row, idx) => (
                     <tr key={idx} className="border-t border-border">
                       {Object.values(row).map((value: any, cellIdx) => (
-                        <td key={cellIdx} className="px-4 py-2">
-                          {value}
+                        <td key={cellIdx} className="px-4 py-2 whitespace-nowrap">
+                          {String(value).length > 50 ? String(value).substring(0, 50) + '...' : value}
                         </td>
                       ))}
                     </tr>
