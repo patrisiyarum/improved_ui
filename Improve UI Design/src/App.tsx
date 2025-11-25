@@ -46,27 +46,13 @@ async function predictText(text: string) {
 
 // --- Define types for results ---
 interface BulkResultRow {
-  Predicted_Main_Category: string;
   Predicted_Subcategory: string;
   [key: string]: any;
 }
 
-interface ChartData {
-  name: string;
-  count: number;
-}
-
 // --- AnalyticsDashboard Component ---
 function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
-  const mainCategoryData = useMemo(() => {
-    if (!results.length) return [];
-    const counts: { [key: string]: number } = {};
-    results.forEach(row => {
-      const category = row.Predicted_Main_Category || "Unknown";
-      counts[category] = (counts[category] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
-  }, [results]);
+  // Removed Main Category calculation
 
   const subCategoryData = useMemo(() => {
     if (!results.length) return [];
@@ -100,82 +86,44 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     );
   }
 
-  // Define styles for dark mode
-  const labelColor = "var(--muted-foreground)"; // Use a readable color from your CSS
+  const labelColor = "var(--muted-foreground)";
   const tooltipStyle = {
-    backgroundColor: "var(--background)", // Use app's background
-    color: "var(--foreground)",         // Use app's text color
-    border: "1px solid var(--border)",   // Use app's border
-    borderRadius: "var(--radius)",     // Use app's border radius
+    backgroundColor: "var(--background)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius)",
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Main Category Distribution</CardTitle>
-          <CardDescription>Based on {results.length} processed rows.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={mainCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <XAxis
-                dataKey="name"
-                fontSize={12}
-                interval={0}
-                angle={-30}
-                textAnchor="end"
-                height={80}
-                tick={{ fill: labelColor }} // Make X-axis text readable
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fill: labelColor }} // Make Y-axis text readable
-              />
-              <Tooltip
-                contentStyle={tooltipStyle} // Style the tooltip
-                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
-              />
-              <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
-              <Bar
-                dataKey="count"
-                fill="#8884d8" // Use a static color that works on dark bg
-                name="Count"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Subcategory Distribution</CardTitle>
           <CardDescription>Based on {results.length} processed rows.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 80 }}>
               <XAxis
                 dataKey="name"
                 fontSize={12}
                 interval={0}
-                angle={-30}
+                angle={-45}
                 textAnchor="end"
-                height={80}
-                tick={{ fill: labelColor }} // Make X-axis text readable
+                tick={{ fill: labelColor }}
               />
               <YAxis
                 allowDecimals={false}
-                tick={{ fill: labelColor }} // Make Y-axis text readable
+                tick={{ fill: labelColor }}
               />
               <Tooltip
-                contentStyle={tooltipStyle} // Style the tooltip
-                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }} // Add a subtle hover effect
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
               />
-              <Legend wrapperStyle={{ color: labelColor }} /> {/* Make legend text readable */}
+              <Legend wrapperStyle={{ color: labelColor }} />
               <Bar
                 dataKey="count"
-                fill="#82ca9d" // Use a different static color
+                fill="#82ca9d"
                 name="Count"
               />
             </BarChart>
@@ -195,7 +143,7 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [bulkResults, setBulkResults] = useState<BulkResultRow[]>([]); // New state for analytics
+  const [bulkResults, setBulkResults] = useState<BulkResultRow[]>([]);
 
   useEffect(() => {
     checkApiHealth();
@@ -245,7 +193,6 @@ export default function App() {
     setPredictions(null);
   };
 
-  // New callback function to receive results from BulkUpload
   const handleBulkUploadComplete = (results: any[]) => {
     setBulkResults(results as BulkResultRow[]);
     alert("Bulk upload complete! Check the 'Analytics' tab for charts.");
@@ -269,9 +216,9 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="outline">Fine-tuned BERT</Badge>
-            <Badge variant="outline">Multi-category Output</Badge>
-            <Badge variant="outline">Version 2.2</Badge>
+            <Badge variant="outline">Augmented BERT</Badge>
+            <Badge variant="outline">Subcategory Classification</Badge>
+            <Badge variant="outline">Version 3.0</Badge>
 
             {checking ? (
               <Badge variant="secondary" className="gap-1">
@@ -308,7 +255,6 @@ export default function App() {
           </Alert>
         )}
 
-        {/* Tabs */}
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="home"><Sparkles className="w-4 h-4 mr-2" /> Analyze</TabsTrigger>
@@ -318,7 +264,6 @@ export default function App() {
 
           {/* Analyze Tab */}
           <TabsContent value="home">
-            
             <Card>
               <CardHeader>
                 <SampleComments onSelectSample={handleSelectSample} /> 
@@ -342,8 +287,8 @@ export default function App() {
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertDescription>Prediction complete! Results displayed below.</AlertDescription>
                     </Alert>
+                    {/* UPDATED: Pass only subPredictions */}
                     <PredictionCard
-                      mainPredictions={predictions.mainPredictions}
                       subPredictions={predictions.subPredictions}
                     />
                   </div>
@@ -361,138 +306,19 @@ export default function App() {
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
-          {/* About Tab (REVISED) */}
           <TabsContent value="about">
-            <Card>
+             {/* ... Content can remain same or be updated for new model ... */}
+             <Card>
               <CardHeader>
-                <CardTitle>About This Tool</CardTitle>
+                <CardTitle>About This Tool (v3.0)</CardTitle>
                 <CardDescription>
-                  A project by <strong>Patrisiya Rumyantseva</strong> to automate and scale operational feedback analysis.
+                  <strong>Patrisiya Rumyantseva</strong> - Subcategory Classification Model
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
+                  This tool uses a <strong>fine-tuned BERT model</strong> augmented with keyword features to classify Delta feedback into 8 specific subcategories.
                 </p>
-                <p>
-                  Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
-                </p>
-
-                {/* --- What Does This Model Do --- */}
-                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">Purpose & Functionality</h3>
-                  <p className="text-muted-foreground mb-6">
-                    The model automates the manual review process by analyzing each comment and classifying it into a relevant <strong>Main Category</strong> and <strong>Subcategory</strong>.
-                  </p>
-                  
-                  {/* --- Icon Grid for Features --- */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                      <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                      <div>
-                        <h4 className="font-medium">Contextual Understanding</h4>
-                        <p className="text-sm text-muted-foreground">Learns and understands industry-specific language and nuance.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                      <Tag className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                      <div>
-                        <h4 className="font-medium">Structured Output</h4>
-                        <p className="text-sm text-muted-foreground">Assigns a Main and Sub-category to each piece of feedback.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                      <Zap className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                      <div>
-                        <h4 className="font-medium">High-Volume Processing</h4>
-                        <p className="text-sm text-muted-foreground">Analyzes thousands of comments from a CSV file in seconds.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                      <Percent className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                      <div>
-                        <h4 className="font-medium">Confidence Scoring</h4>
-                        <p className="text-sm text-muted-foreground">Provides a probability score for each prediction to aid in analysis.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
-                    <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
-                  </div>
-                </div>
-
-                {/* --- How It Works --- */}
-                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">Model Development & Training</h3>
-                  <p className="text-muted-foreground mb-6">
-                    The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
-                  </p>
-
-                  {/* --- Visual Stepper for Process --- */}
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                      <div>
-                        <h4 className="font-medium">Historical Data Training</h4>
-                        <p className="text-sm text-muted-foreground">Trained on a "source of truth" dataset of human-classified comments.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                      <div>
-                        <h4 className="font-medium">Fine-Tuned BERT Model</h4>
-                        <p className="text-sm text-muted-foreground">A BERT model was trained to recognize specific patterns and terminology.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                      <div>
-                        <h4 className="font-medium">Dual-Output Architecture</h4>
-                        <p className="text-sm text-muted-foreground">Designed to predict both the Main and Sub-category simultaneously.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
-                      <div>
-                        <h4 className="font-medium">Performance Validation</h4>
-                        <p className="text-sm text-muted-foreground">Rigorously tested against human classifications to ensure accuracy.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
-                    <strong>In short:</strong> The model learned from human expertise to replicate the same classification process, but with much greater speed and scale.
-                  </div>
-                </div>
-
-                {/* --- Model Info Grid --- */}
-                <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Project Owner</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Patrisiya Rumyantseva
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Business Application</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Automated classification of critical feedback on Delta on-board crew meals for trend analysis and operational improvement.
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Technology Stack</h4>
-                    <p className="text-sm text-muted-foreground">
-                      TensorFlow/Keras (Model), BERT (Base Architecture), React (UI), FastAPI (API).
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Version Information</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Current version: 2.2<br />Last updated: October 2025
-                    </p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
