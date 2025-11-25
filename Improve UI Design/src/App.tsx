@@ -52,8 +52,6 @@ interface BulkResultRow {
 
 // --- AnalyticsDashboard Component ---
 function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
-  // Removed Main Category calculation
-
   const subCategoryData = useMemo(() => {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
@@ -110,6 +108,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                 interval={0}
                 angle={-45}
                 textAnchor="end"
+                height={100} 
                 tick={{ fill: labelColor }}
               />
               <YAxis
@@ -133,7 +132,6 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     </div>
   );
 }
-
 
 // --- Main App ---
 export default function App() {
@@ -255,6 +253,7 @@ export default function App() {
           </Alert>
         )}
 
+        {/* Tabs */}
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="home"><Sparkles className="w-4 h-4 mr-2" /> Analyze</TabsTrigger>
@@ -287,7 +286,6 @@ export default function App() {
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertDescription>Prediction complete! Results displayed below.</AlertDescription>
                     </Alert>
-                    {/* UPDATED: Pass only subPredictions */}
                     <PredictionCard
                       subPredictions={predictions.subPredictions}
                     />
@@ -306,19 +304,138 @@ export default function App() {
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
+          {/* About Tab (Restored & Updated for v3.0) */}
           <TabsContent value="about">
-             {/* ... Content can remain same or be updated for new model ... */}
-             <Card>
+            <Card>
               <CardHeader>
-                <CardTitle>About This Tool (v3.0)</CardTitle>
+                <CardTitle>About This Tool</CardTitle>
                 <CardDescription>
-                  <strong>Patrisiya Rumyantseva</strong> - Subcategory Classification Model
+                  A project by <strong>Patrisiya Rumyantseva</strong> to automate and scale operational feedback analysis.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  This tool uses a <strong>fine-tuned BERT model</strong> augmented with keyword features to classify Delta feedback into 8 specific subcategories.
+                  This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
                 </p>
+                <p>
+                  Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
+                </p>
+
+                {/* --- What Does This Model Do --- */}
+                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
+                  <h3 className="mb-3">Purpose & Functionality</h3>
+                  <p className="text-muted-foreground mb-6">
+                    The model automates the manual review process by analyzing each comment and classifying it into a precise <strong>Subcategory</strong> for immediate action.
+                  </p>
+                  
+                  {/* --- Icon Grid for Features --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Hybrid Intelligence</h4>
+                        <p className="text-sm text-muted-foreground">Combines BERT deep learning with keyword feature extraction.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Tag className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Structured Classification</h4>
+                        <p className="text-sm text-muted-foreground">Sorts feedback into 8 specific operational subcategories.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Zap className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">High-Volume Processing</h4>
+                        <p className="text-sm text-muted-foreground">Analyzes thousands of comments from a CSV file in seconds.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                      <Percent className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium">Confidence Scoring</h4>
+                        <p className="text-sm text-muted-foreground">Provides a probability score to highlight ambiguous feedback.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
+                    <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
+                  </div>
+                </div>
+
+                {/* --- How It Works --- */}
+                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
+                  <h3 className="mb-3">Model Development & Training</h3>
+                  <p className="text-muted-foreground mb-6">
+                    The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
+                  </p>
+
+                  {/* --- Visual Stepper for Process --- */}
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                      <div>
+                        <h4 className="font-medium">Augmented Training Data</h4>
+                        <p className="text-sm text-muted-foreground">Trained on expert-classified comments enriched with synonym augmentation.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                      <div>
+                        <h4 className="font-medium">BERT + Feature Fusion</h4>
+                        <p className="text-sm text-muted-foreground">Uses BERT for context and explicit keyword features for precision.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                      <div>
+                        <h4 className="font-medium">Subcategory Focus</h4>
+                        <p className="text-sm text-muted-foreground">Optimized to distinguish between specific issues like "Taste" vs "Presentation".</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                      <div>
+                        <h4 className="font-medium">Performance Validation</h4>
+                        <p className="text-sm text-muted-foreground">Rigorously tested using Top-2 and Top-3 accuracy metrics.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
+                    <strong>In short:</strong> The model learned from human expertise to replicate the same classification process, but with much greater speed and scale.
+                  </div>
+                </div>
+
+                {/* --- Model Info Grid --- */}
+                <div className="grid sm:grid-cols-2 gap-4 mt-6">
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Project Owner</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Patrisiya Rumyantseva
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Business Application</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Automated classification of critical feedback on Delta on-board crew meals for trend analysis and operational improvement.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Technology Stack</h4>
+                    <p className="text-sm text-muted-foreground">
+                      TensorFlow/Keras (Model), BERT (Base Architecture), React (UI), FastAPI (API).
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Version Information</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Current version: 3.0<br />Last updated: November 2025
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
