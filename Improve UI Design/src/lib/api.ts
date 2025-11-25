@@ -1,9 +1,5 @@
 /**
  * API Client for FCR Feedback Categorization
- * 
- * Configure the API_URL based on your environment:
- * - Development: http://localhost:8000
- * - Production: Your deployed backend URL
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -14,7 +10,7 @@ export interface Prediction {
 }
 
 export interface PredictionResponse {
-  mainPredictions: Prediction[];
+  // Removed mainPredictions
   subPredictions: Prediction[];
 }
 
@@ -91,7 +87,7 @@ export async function checkHealth(): Promise<{ status: string; model_loaded: boo
 /**
  * Get available categories
  */
-export async function getCategories(): Promise<{ mainCategories: string[]; subCategories: string[] }> {
+export async function getCategories(): Promise<{ subCategories: string[] }> {
   try {
     const response = await fetch(`${API_URL}/categories`);
     
