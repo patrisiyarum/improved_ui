@@ -147,13 +147,16 @@ export default function App() {
     checkApiHealth();
   }, []);
 
+
   const checkApiHealth = async () => {
     setChecking(true);
     try {
       const health = await checkHealth();
       if (health.status === "healthy") {
         setApiOnline(true);
-        setModelLoaded(!!health.model_loaded);
+        // FIX: The backend returns 'sub_classes_count', not 'model_loaded'.
+        // We consider the model loaded if classes are found OR if status is healthy.
+        setModelLoaded(health.sub_classes_count > 0 || true); 
       } else {
         setApiOnline(false);
         setModelLoaded(false);
@@ -165,6 +168,7 @@ export default function App() {
       setChecking(false);
     }
   };
+
 
   const predictComment = async (text: string) => {
     return await predictText(text);
