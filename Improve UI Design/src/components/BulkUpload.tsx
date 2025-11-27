@@ -5,12 +5,19 @@ import { Progress } from "./ui/progress";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Upload, Download, CheckCircle2 } from "lucide-react";
 import Papa from "papaparse";
-import * as XLSX from "xlsx"; // Import the new library
+import * as XLSX from "xlsx";
 
 interface BulkUploadProps {
   onPredict: (text: string) => Promise<{ subPredictions: any[] }>;
   onUploadComplete: (results: any[]) => void;
 }
+
+// Keywords to look for in the header row (Case Insensitive)
+const COLUMN_KEYWORDS = [
+  "text", "comment", "comments", "feedback", "review", 
+  "pilot's questions/answers", "pilots questions/answers", 
+  "pilot's questions", "questions/answers"
+];
 
 export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -21,25 +28,50 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [columns, setColumns] = useState<string[]>([]);
   const [stitchCount, setStitchCount] = useState(0);
 
-  // --- Helper: Parse Excel File ---
+  // --- Helper: Parse Excel File with Smart Header Detection ---
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "binary" });
-          const sheetName = workbook.SheetNames[0]; // Read first sheet
+          const workbook = XLSX.read(data, { type: "array" }); // Read as ArrayBuffer for better compatibility
+          const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          // Convert to JSON (array of objects)
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          
+          // 1. Convert to a raw array of arrays to scan for headers
+          const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          
+          // 2. Find the row index that looks like a header
+          let headerRowIndex = 0;
+          const foundIndex = rawData.findIndex(row => 
+            row.some(cell => 
+              typeof cell === 'string' && 
+              COLUMN_KEYWORDS.some(k => cell.toLowerCase().trim().includes(k))
+            )
+          );
+
+          if (foundIndex !== -1) {
+            headerRowIndex = foundIndex;
+            console.log(`✅ Smart Detect: Headers found on row ${headerRowIndex + 1}`);
+          } else {
+            console.warn("⚠️ Could not find a recognizable header row. Defaulting to Row 1.");
+          }
+
+          // 3. Re-parse using the correct header row
+          // 'range' tells SheetJS to start parsing from that specific row
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { 
+            defval: "",
+            range: headerRowIndex 
+          });
+          
           resolve(jsonData);
         } catch (error) {
           reject(error);
         }
       };
       reader.onerror = (error) => reject(error);
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     });
   };
 
@@ -70,7 +102,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         } else {
           data = await parseCSV(uploadedFile);
         }
-        setPreviewData(data.slice(0, 5)); // Preview first 5 rows
+        setPreviewData(data.slice(0, 5));
       } catch (error) {
         console.error("Error reading file:", error);
         alert("Failed to read file. Please ensure it is a valid CSV or Excel file.");
@@ -86,7 +118,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
     setStitchCount(0);
 
     try {
-      // 1. Parse File based on type
+      // 1. Parse File
       let rawData: any[] = [];
       if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
         rawData = await parseExcel(file);
@@ -94,17 +126,12 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         rawData = await parseCSV(file);
       }
 
-      // Capture headers safely
       const originalHeaders = rawData.length > 0 ? Object.keys(rawData[0]) : [];
 
-      // 2. Identify Text Column
+      // 2. Identify Text Column (using shared keyword list)
       const textCol = originalHeaders.find((h) => {
         const headerLower = h.toLowerCase().trim();
-        return [
-          "text", "comment", "comments", "feedback", "review",
-          "pilot's questions/answers", "pilots questions/answers",
-          "pilot's questions", "questions/answers",
-        ].some((keyword) => headerLower.includes(keyword));
+        return COLUMN_KEYWORDS.some((keyword) => headerLower.includes(keyword));
       });
 
       if (!textCol) {
@@ -113,18 +140,15 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         return;
       }
 
-      // 3. Smart Stitching Logic (Only needed for CSVs mostly, but safe to keep)
+      // 3. Smart Stitching (Mainly for CSVs, but kept safe for Excel)
       const cleanData: any[] = [];
       let lastValidRow: any = null;
       let stitched = 0;
       
-      // Excel files usually don't break rows like CSVs, but we keep this logic uniform
       const keyCol1 = originalHeaders[0]; 
 
       for (const row of rawData) {
         const firstVal = row[keyCol1];
-        // Heuristic: If first column has data, it's a valid row
-        // (Excel parsing is usually cleaner, so this mostly passes through)
         if (firstVal !== undefined && firstVal !== "") {
           cleanData.push(row);
           lastValidRow = row;
@@ -135,12 +159,8 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
-        } else {
-           // If it's an empty row in Excel, ignore or push depending on preference
-           // We'll skip truly empty rows
         }
       }
-
       setStitchCount(stitched);
 
       // 4. Save Headers for Export
@@ -194,7 +214,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const handleDownload = () => {
     if (!results || results.length === 0) return;
 
-    // Use PapaParse to export CSV (works for Excel data too once converted to JSON)
     const csv = Papa.unparse(
       {
         fields: columns,
@@ -226,7 +245,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           </p>
           <input
             type="file"
-            accept=".csv, .xlsx, .xls" // Updated to accept Excel
+            accept=".csv, .xlsx, .xls"
             onChange={handleFileUpload}
             className="hidden"
             id="file-upload"
