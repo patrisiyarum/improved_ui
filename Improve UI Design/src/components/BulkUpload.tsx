@@ -28,11 +28,25 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [columns, setColumns] = useState<string[]>([]);
   const [stitchCount, setStitchCount] = useState(0);
 
-  // --- Helper: Parse Excel File (Searches ALL Sheets) ---
+  // --- Helper: Clean Text Artifacts ---
+  // Removes _x000d_ and fixes weird characters from source systems
+  const cleanValue = (val: any) => {
+    if (typeof val === 'string') {
+      // Replace encoded newlines with real spaces or newlines
+      let cleaned = val.replace(/_x000d_/gi, "\n").trim();
+      // Remove other common junk chars if needed
+      return cleaned;
+    }
+    // Round long decimals (e.g. 1.302777 -> 1.30)
+    if (typeof val === 'number' && !Number.isInteger(val)) {
+        return parseFloat(val.toFixed(2));
+    }
+    return val;
+  };
+
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
@@ -66,24 +80,20 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           }
 
           if (!sheetFound) {
-            console.warn("⚠️ No sheet matched the required columns. Defaulting to first sheet.");
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
             foundSheetData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
           }
-          
           resolve(foundSheetData);
         } catch (error) {
           console.error("XLSX Read Error:", error);
           reject(error);
         }
       };
-      
       reader.onerror = (error) => reject(error);
       reader.readAsBinaryString(file);
     });
   };
 
-  // --- Helper: Parse CSV File ---
   const parseCSV = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
@@ -160,18 +170,26 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       const keyCol1 = originalHeaders[0]; 
 
       for (const row of rawData) {
-        const firstVal = row[keyCol1];
+        // --- CLEAN DATA STEP ---
+        // Clean every value in the row before processing
+        const cleanedRow: any = {};
+        Object.keys(row).forEach(key => {
+            cleanedRow[key] = cleanValue(row[key]);
+        });
+
+        const firstVal = cleanedRow[keyCol1];
+        
         if (firstVal !== undefined && firstVal !== "") {
-          cleanData.push(row);
-          lastValidRow = row;
+          cleanData.push(cleanedRow);
+          lastValidRow = cleanedRow;
         } else if (lastValidRow && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-          const fragment = Object.values(row).filter(v => v).join(" ");
+          const fragment = Object.values(cleanedRow).filter(v => v).join(" ");
           if (fragment) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
         } else {
-             if (row[textCol]) cleanData.push(row);
+             if (cleanedRow[textCol]) cleanData.push(cleanedRow);
         }
       }
       setStitchCount(stitched);
@@ -225,21 +243,11 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const handleDownload = () => {
     if (!results || results.length === 0) return;
 
-    // --- NEW: Download as Excel (.xlsx) ---
     try {
-      // 1. Create a new Workbook
       const workbook = XLSX.utils.book_new();
-
-      // 2. Convert results to a Worksheet
-      // header: columns ensures we keep the order and include all fields
       const worksheet = XLSX.utils.json_to_sheet(results, { header: columns });
-
-      // 3. Append Worksheet to Workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, "Categorized Feedback");
-
-      // 4. Write and Download the file
       XLSX.writeFile(workbook, "categorized_feedback.xlsx");
-      
     } catch (err) {
       console.error("Download error:", err);
       alert("Failed to generate Excel file.");
