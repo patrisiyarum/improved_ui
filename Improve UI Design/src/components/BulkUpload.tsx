@@ -28,7 +28,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [columns, setColumns] = useState<string[]>([]);
   const [stitchCount, setStitchCount] = useState(0);
 
-  // --- Helper: Parse Excel File with Smart Header Detection ---
+  // --- Helper: Parse Excel File (Searches ALL Sheets) ---
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -36,38 +36,50 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
-          // Reverted to 'binary' type which worked for you previously
-          const workbook = XLSX.read(data, { type: "binary" }); 
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
+          const workbook = XLSX.read(data, { type: "array" }); // Use 'array' for best compatibility
           
-          // 1. Convert to a raw array of arrays to scan for headers
-          const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-          
-          // 2. Smart Header Detection: Find the row index that looks like a header
-          let headerRowIndex = 0;
-          const foundIndex = rawData.findIndex(row => 
-            row && row.some(cell => 
-              typeof cell === 'string' && 
-              COLUMN_KEYWORDS.some(k => cell.toLowerCase().trim().includes(k))
-            )
-          );
+          let foundSheetData: any[] = [];
+          let foundHeaderRow = 0;
+          let sheetFound = false;
 
-          if (foundIndex !== -1) {
-            headerRowIndex = foundIndex;
-            console.log(`✅ Smart Detect: Headers found on row ${headerRowIndex + 1}`);
-          } else {
-            console.warn("⚠️ Could not find a recognizable header row. Defaulting to Row 1.");
+          // Loop through ALL sheets to find the one with the correct headers
+          for (const sheetName of workbook.SheetNames) {
+            const sheet = workbook.Sheets[sheetName];
+            
+            // Convert to raw array to scan headers
+            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+            
+            // Search first 20 rows for a valid header
+            const rowIndex = rawData.slice(0, 20).findIndex(row => 
+              row && row.some(cell => 
+                typeof cell === 'string' && 
+                COLUMN_KEYWORDS.some(k => cell.toLowerCase().trim().includes(k))
+              )
+            );
+
+            if (rowIndex !== -1) {
+              console.log(`✅ Found valid headers in sheet: "${sheetName}" on row ${rowIndex + 1}`);
+              foundHeaderRow = rowIndex;
+              
+              // Re-parse ONLY this sheet using the correct header row
+              foundSheetData = XLSX.utils.sheet_to_json(sheet, { 
+                defval: "",
+                range: foundHeaderRow 
+              });
+              
+              sheetFound = true;
+              break; // Stop searching once we find a valid sheet
+            }
           }
 
-          // 3. Re-parse using the correct header row
-          // 'range' tells SheetJS to start parsing from that specific row
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { 
-            defval: "",
-            range: headerRowIndex 
-          });
+          if (!sheetFound) {
+            console.warn("⚠️ No sheet matched the required columns. Defaulting to first sheet.");
+            // Fallback: Just load the first sheet if nothing matched
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            foundSheetData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+          }
           
-          resolve(jsonData);
+          resolve(foundSheetData);
         } catch (error) {
           console.error("XLSX Read Error:", error);
           reject(error);
@@ -75,8 +87,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       };
       
       reader.onerror = (error) => reject(error);
-      // Reverted to readAsBinaryString
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file); // Changed to ArrayBuffer for robustness
     });
   };
 
@@ -107,6 +118,12 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         } else {
           data = await parseCSV(uploadedFile);
         }
+        
+        // Safety check: ensure data is an array
+        if (!Array.isArray(data)) {
+            throw new Error("Parsed data is not an array");
+        }
+        
         setPreviewData(data.slice(0, 5));
       } catch (error) {
         console.error("Error reading file:", error);
@@ -131,7 +148,13 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         rawData = await parseCSV(file);
       }
 
-      const originalHeaders = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+      if (!rawData || rawData.length === 0) {
+          alert("File appears to be empty.");
+          setProcessing(false);
+          return;
+      }
+
+      const originalHeaders = Object.keys(rawData[0]);
 
       // 2. Identify Text Column (using shared keyword list)
       const textCol = originalHeaders.find((h) => {
@@ -164,6 +187,11 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
+        } else {
+            // For Excel, if a row is totally empty or invalid, we skip it
+            // unless it has data in other columns we care about. 
+            // Usually Excel parsing is cleaner so we just push valid rows.
+             if (row[textCol]) cleanData.push(row);
         }
       }
       setStitchCount(stitched);
