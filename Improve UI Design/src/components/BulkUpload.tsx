@@ -28,25 +28,50 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [columns, setColumns] = useState<string[]>([]);
   const [stitchCount, setStitchCount] = useState(0);
 
-  // --- Helper: Clean Text Artifacts ---
-  // Removes _x000d_ and fixes weird characters from source systems
+  // --- Helper: Aggressive Data Cleaning ---
   const cleanValue = (val: any) => {
+    // 1. Handle actual Numbers (Round them)
+    if (typeof val === 'number') {
+        if (!Number.isInteger(val)) {
+            return parseFloat(val.toFixed(2));
+        }
+        return val;
+    }
+    
+    // 2. Handle Strings (Clean artifacts & Round numeric strings)
     if (typeof val === 'string') {
-      // Replace encoded newlines with real spaces or newlines
-      let cleaned = val.replace(/_x000d_/gi, "\n").trim();
-      // Remove other common junk chars if needed
-      return cleaned;
+        // Attempt to fix encoded newlines first
+        let cleaned = val
+            .replace(/_x005F_x000D_/gi, "\n") // Handle double-escaped
+            .replace(/_x000D_/gi, "\n")       // Handle standard escaped
+            .replace(/_x000d_/gi, "\n")       // Handle lowercase variation
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .trim();
+
+        // Check if the string is actually a number (e.g. "1.302222")
+        // We only convert if it looks purely numeric and isn't an ID code
+        const num = parseFloat(cleaned);
+        const isNumeric = !isNaN(num) && isFinite(num) && !cleaned.includes("_") && !cleaned.match(/[a-z]/i);
+        
+        if (isNumeric) {
+             // If it has a decimal point, round it
+             if (cleaned.includes(".")) {
+                 return parseFloat(num.toFixed(2));
+             }
+             return num;
+        }
+
+        return cleaned;
     }
-    // Round long decimals (e.g. 1.302777 -> 1.30)
-    if (typeof val === 'number' && !Number.isInteger(val)) {
-        return parseFloat(val.toFixed(2));
-    }
+    
     return val;
   };
 
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
@@ -122,7 +147,15 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         }
         
         if (!Array.isArray(data)) throw new Error("Parsed data is not an array");
-        setPreviewData(data.slice(0, 5));
+        
+        // Preview with cleaning applied immediately so you can see it works
+        const cleanedPreview = data.slice(0, 5).map(row => {
+            const newRow: any = {};
+            Object.keys(row).forEach(k => newRow[k] = cleanValue(row[k]));
+            return newRow;
+        });
+        setPreviewData(cleanedPreview);
+
       } catch (error) {
         console.error("Error reading file:", error);
         alert("Failed to read file. Please ensure it is a valid CSV or Excel file.");
@@ -171,7 +204,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
 
       for (const row of rawData) {
         // --- CLEAN DATA STEP ---
-        // Clean every value in the row before processing
         const cleanedRow: any = {};
         Object.keys(row).forEach(key => {
             cleanedRow[key] = cleanValue(row[key]);
@@ -179,16 +211,19 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
 
         const firstVal = cleanedRow[keyCol1];
         
+        // Logic: if first column exists, it's a new row.
         if (firstVal !== undefined && firstVal !== "") {
           cleanData.push(cleanedRow);
           lastValidRow = cleanedRow;
         } else if (lastValidRow && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+          // Stitching for CSVs
           const fragment = Object.values(cleanedRow).filter(v => v).join(" ");
           if (fragment) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
         } else {
+             // For Excel, blindly push if it looks valid
              if (cleanedRow[textCol]) cleanData.push(cleanedRow);
         }
       }
