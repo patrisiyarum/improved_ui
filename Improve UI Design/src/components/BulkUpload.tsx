@@ -32,20 +32,22 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "array" }); // Read as ArrayBuffer for better compatibility
+          // Reverted to 'binary' type which worked for you previously
+          const workbook = XLSX.read(data, { type: "binary" }); 
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           
           // 1. Convert to a raw array of arrays to scan for headers
           const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
           
-          // 2. Find the row index that looks like a header
+          // 2. Smart Header Detection: Find the row index that looks like a header
           let headerRowIndex = 0;
           const foundIndex = rawData.findIndex(row => 
-            row.some(cell => 
+            row && row.some(cell => 
               typeof cell === 'string' && 
               COLUMN_KEYWORDS.some(k => cell.toLowerCase().trim().includes(k))
             )
@@ -67,11 +69,14 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           
           resolve(jsonData);
         } catch (error) {
+          console.error("XLSX Read Error:", error);
           reject(error);
         }
       };
+      
       reader.onerror = (error) => reject(error);
-      reader.readAsArrayBuffer(file);
+      // Reverted to readAsBinaryString
+      reader.readAsBinaryString(file);
     });
   };
 
@@ -153,7 +158,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           cleanData.push(row);
           lastValidRow = row;
         } else if (lastValidRow && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-          // Only stitch fragments for CSVs (Excel parsers handle newlines correctly)
+          // Only stitch fragments for CSVs
           const fragment = Object.values(row).filter(v => v).join(" ");
           if (fragment) {
             lastValidRow[textCol] += "\n" + fragment;
