@@ -161,24 +161,32 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 10 Problem Airports</CardTitle>
-            <CardDescription>Volume of reports by Departure Airport</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={airportData} layout="vertical" margin={{ left: 20 }}>
+      
+      {/* --- ROW 1: AI CONFIDENCE (Now at the top) --- */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" />
+            <CardTitle>AI Confidence Health Check</CardTitle>
+          </div>
+          <CardDescription>Evaluating model certainty across {results.length} processed records.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={confidenceData} layout="vertical">
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={50} tick={{ fill: labelColor }} />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fill: labelColor, fontSize: 12 }} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
-                <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} name="Reports" />
+                <Bar dataKey="count" fill="#FFBB28" radius={[0, 4, 4, 0]} barSize={30} label={{ position: 'right', fill: labelColor }} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* --- ROW 2: TRENDS & AIRPORTS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Issue Volume Over Time</CardTitle>
@@ -191,18 +199,36 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                 <XAxis dataKey="date" tick={{ fill: labelColor }} fontSize={12} />
                 <YAxis tick={{ fill: labelColor }} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
               </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 10 Problem Airports</CardTitle>
+            <CardDescription>Volume of reports by Departure Airport</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={airportData} layout="vertical" margin={{ left: 10 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={40} tick={{ fill: labelColor }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
+                <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} name="Reports" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
+      {/* --- ROW 3: FLEET & SOURCE --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
             <CardTitle>Fleet Breakdown</CardTitle>
-            <CardDescription>Issues by Aircraft</CardDescription>
+            <CardDescription>Issues by Aircraft Type</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -220,16 +246,16 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
+                <Legend verticalAlign="bottom" height={36}/>
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-1">
+        <Card>
           <CardHeader>
             <CardTitle>Report Source</CardTitle>
-            <CardDescription>Crew vs. Passenger</CardDescription>
+            <CardDescription>Crew vs. Passenger Meals</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -246,24 +272,8 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
+                <Legend verticalAlign="bottom" height={36}/>
               </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>AI Confidence</CardTitle>
-            <CardDescription>Certainty levels</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={confidenceData}>
-                <XAxis dataKey="name" tick={{ fill: labelColor, fontSize: 10 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
-                <Bar dataKey="count" fill="#FFBB28" radius={[4, 4, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -306,7 +316,6 @@ export default function App() {
     }
   };
 
-  // --- ADDED THIS FUNCTION BACK ---
   const predictComment = async (text: string) => {
     return await predictText(text);
   };
@@ -340,6 +349,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background dark">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -393,6 +403,7 @@ export default function App() {
           </Alert>
         )}
 
+        {/* Tabs */}
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="home"><Sparkles className="w-4 h-4 mr-2" /> Analyze</TabsTrigger>
@@ -400,6 +411,7 @@ export default function App() {
             <TabsTrigger value="about"><Info className="w-4 h-4 mr-2" /> About</TabsTrigger>
           </TabsList>
 
+          {/* Analyze Tab */}
           <TabsContent value="home">
             <Card>
               <CardHeader>
@@ -437,10 +449,12 @@ export default function App() {
             />
           </TabsContent>
 
+          {/* Analytics Tab */}
           <TabsContent value="analytics">
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
+          {/* About Tab */}
           <TabsContent value="about">
             <Card>
               <CardHeader>
@@ -453,11 +467,17 @@ export default function App() {
                 <p>
                   This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
                 </p>
+                <p>
+                  Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
+                </p>
+
+                {/* --- What Does This Model Do --- */}
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-6">
                     The model automates the manual review process by analyzing each comment and classifying it into a precise <strong>Subcategory</strong> for immediate action.
                   </p>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
@@ -489,11 +509,29 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
+                  <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
+                </div>
+
+                {/* --- Model Info Grid --- */}
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
                     <h4 className="mb-2">Project Owner</h4>
                     <p className="text-sm text-muted-foreground">
                       Patrisiya Rumyantseva
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Business Application</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Automated classification of critical feedback on Delta on-board crew meals for trend analysis and operational improvement.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg border border-border bg-muted/30">
+                    <h4 className="mb-2">Technology Stack</h4>
+                    <p className="text-sm text-muted-foreground">
+                      TensorFlow/Keras (Model), BERT (Base Architecture), React (UI), FastAPI (API).
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
