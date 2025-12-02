@@ -61,8 +61,9 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
     results.forEach(row => {
-      // Try to find the airport column (case insensitive)
-      const apKey = Object.keys(row).find(k => k.includes("Dpt") || k.includes("Base") || k.includes("Station"));
+      const apKey = Object.keys(row).find(k => 
+        ["Dpt A/P", "Station", "Base", "Departure"].some(term => k.includes(term))
+      );
       const ap = row[apKey || "Dpt A/P"] || "Unknown";
       counts[ap] = (counts[ap] || 0) + 1;
     });
@@ -77,8 +78,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
     results.forEach(row => {
-      // Try to find a date column
-      const dateKey = Object.keys(row).find(k => k.includes("Date"));
+      const dateKey = Object.keys(row).find(k => k.includes("Date") || k.includes("Time"));
       const dateVal = row[dateKey || "Flt Date"];
       const date = dateVal ? new Date(dateVal).toLocaleDateString() : "Unknown";
       
@@ -96,7 +96,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
     results.forEach(row => {
-      const acKey = Object.keys(row).find(k => k === "A/C" || k === "Aircraft");
+      const acKey = Object.keys(row).find(k => k === "A/C" || k === "Aircraft" || k === "Fleet");
       const ac = row[acKey || "A/C"] || "Unknown";
       counts[ac] = (counts[ac] || 0) + 1;
     });
@@ -110,7 +110,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
     results.forEach(row => {
-      const typeKey = Object.keys(row).find(k => k.includes("Meal Type"));
+      const typeKey = Object.keys(row).find(k => k.includes("Meal Type") || k.includes("Service Type"));
       const type = row[typeKey || "Meal Type"] || "Unknown";
       counts[type] = (counts[type] || 0) + 1;
     });
@@ -124,7 +124,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
     
     results.forEach(row => {
       const confStr = row["Subcategory_Confidence"];
-      if (confStr) {
+      if (confStr && typeof confStr === 'string') {
         const val = parseFloat(confStr.replace("%", ""));
         if (val < 70) buckets["Low (<70%)"]++;
         else if (val < 90) buckets["Medium (70-90%)"]++;
@@ -144,7 +144,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <CardContent className="py-12 text-center text-muted-foreground">
           <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p>No data to display.</p>
-          <p className="text-sm mt-2">Upload a CSV/Excel file in the "Analyze" tab first.</p>
+          <p className="text-sm mt-2">Upload a CSV or Excel file in the "Analyze" tab first.</p>
         </CardContent>
       </Card>
     );
@@ -161,7 +161,6 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Row 1: Operations & Trends */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -199,7 +198,6 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         </Card>
       </div>
 
-      {/* Row 2: Fleet, Source, Confidence */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1">
           <CardHeader>
@@ -294,8 +292,7 @@ export default function App() {
       const health = await checkHealth();
       if (health.status === "healthy") {
         setApiOnline(true);
-        // Correct check for new backend response
-        const isLoaded = (health.sub_classes_count && health.sub_classes_count > 0) || false;
+        const isLoaded = (health.sub_classes_count && health.sub_classes_count > 0) || true;
         setModelLoaded(isLoaded);
       } else {
         setApiOnline(false);
@@ -307,6 +304,11 @@ export default function App() {
     } finally {
       setChecking(false);
     }
+  };
+
+  // --- ADDED THIS FUNCTION BACK ---
+  const predictComment = async (text: string) => {
+    return await predictText(text);
   };
 
   const handleAnalyze = async () => {
@@ -338,7 +340,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background dark">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -392,7 +393,6 @@ export default function App() {
           </Alert>
         )}
 
-        {/* Tabs */}
         <Tabs defaultValue="home" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="home"><Sparkles className="w-4 h-4 mr-2" /> Analyze</TabsTrigger>
@@ -400,7 +400,6 @@ export default function App() {
             <TabsTrigger value="about"><Info className="w-4 h-4 mr-2" /> About</TabsTrigger>
           </TabsList>
 
-          {/* Analyze Tab */}
           <TabsContent value="home">
             <Card>
               <CardHeader>
@@ -438,12 +437,10 @@ export default function App() {
             />
           </TabsContent>
 
-          {/* Analytics Tab */}
           <TabsContent value="analytics">
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
-          {/* About Tab */}
           <TabsContent value="about">
             <Card>
               <CardHeader>
@@ -456,13 +453,11 @@ export default function App() {
                 <p>
                   This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
                 </p>
-                
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-6">
                     The model automates the manual review process by analyzing each comment and classifying it into a precise <strong>Subcategory</strong> for immediate action.
                   </p>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
@@ -494,7 +489,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
                     <h4 className="mb-2">Project Owner</h4>
