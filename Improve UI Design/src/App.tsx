@@ -19,7 +19,10 @@ import {
 import { PredictionCard } from "./components/PredictionCard";
 import { SampleComments } from "./components/SampleComments";
 import { BulkUpload } from "./components/BulkUpload";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { 
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+} from "recharts";
 
 const API_URL = "https://feedback-webapp-5zc2.onrender.com";
 
@@ -52,14 +55,83 @@ interface BulkResultRow {
 
 // --- AnalyticsDashboard Component ---
 function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
-  const subCategoryData = useMemo(() => {
+  
+  // 1. Operational Hotspots (Top 10 Airports)
+  const airportData = useMemo(() => {
     if (!results.length) return [];
     const counts: { [key: string]: number } = {};
     results.forEach(row => {
-      const category = row.Predicted_Subcategory || "Unknown";
-      counts[category] = (counts[category] || 0) + 1;
+      // Try to find the airport column (case insensitive)
+      const apKey = Object.keys(row).find(k => k.includes("Dpt") || k.includes("Base") || k.includes("Station"));
+      const ap = row[apKey || "Dpt A/P"] || "Unknown";
+      counts[ap] = (counts[ap] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [results]);
+
+  // 2. Trends Over Time (Daily Volume)
+  const trendData = useMemo(() => {
+    if (!results.length) return [];
+    const counts: { [key: string]: number } = {};
+    results.forEach(row => {
+      // Try to find a date column
+      const dateKey = Object.keys(row).find(k => k.includes("Date"));
+      const dateVal = row[dateKey || "Flt Date"];
+      const date = dateVal ? new Date(dateVal).toLocaleDateString() : "Unknown";
+      
+      if (date !== "Unknown" && date !== "Invalid Date") {
+        counts[date] = (counts[date] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [results]);
+
+  // 3. Aircraft Fleet Breakdown
+  const fleetData = useMemo(() => {
+    if (!results.length) return [];
+    const counts: { [key: string]: number } = {};
+    results.forEach(row => {
+      const acKey = Object.keys(row).find(k => k === "A/C" || k === "Aircraft");
+      const ac = row[acKey || "A/C"] || "Unknown";
+      counts[ac] = (counts[ac] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [results]);
+
+  // 4. Crew vs. Passenger Breakdown
+  const sourceData = useMemo(() => {
+    if (!results.length) return [];
+    const counts: { [key: string]: number } = {};
+    results.forEach(row => {
+      const typeKey = Object.keys(row).find(k => k.includes("Meal Type"));
+      const type = row[typeKey || "Meal Type"] || "Unknown";
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [results]);
+
+  // 5. Model Confidence Health
+  const confidenceData = useMemo(() => {
+    if (!results.length) return [];
+    const buckets = { "Low (<70%)": 0, "Medium (70-90%)": 0, "High (>90%)": 0 };
+    
+    results.forEach(row => {
+      const confStr = row["Subcategory_Confidence"];
+      if (confStr) {
+        const val = parseFloat(confStr.replace("%", ""));
+        if (val < 70) buckets["Low (<70%)"]++;
+        else if (val < 90) buckets["Medium (70-90%)"]++;
+        else buckets["High (>90%)"]++;
+      }
+    });
+    return Object.entries(buckets).map(([name, count]) => ({ name, count }));
   }, [results]);
 
   if (!results.length) {
@@ -67,23 +139,18 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
       <Card>
         <CardHeader>
           <CardTitle>Analytics Dashboard</CardTitle>
-          <CardDescription>
-            View category trends and feedback distributions
-          </CardDescription>
+          <CardDescription>Upload a file to see comprehensive insights.</CardDescription>
         </CardHeader>
-        <CardContent className="py-12">
-          <div className="text-center text-muted-foreground">
-            <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>No data to display.</p>
-            <p className="text-sm mt-2">
-              Upload a CSV file on the "Analyze" tab to see your charts.
-            </p>
-          </div>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No data to display.</p>
+          <p className="text-sm mt-2">Upload a CSV/Excel file in the "Analyze" tab first.</p>
         </CardContent>
       </Card>
     );
   }
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const labelColor = "var(--muted-foreground)";
   const tooltipStyle = {
     backgroundColor: "var(--background)",
@@ -94,41 +161,115 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Subcategory Distribution</CardTitle>
-          <CardDescription>Based on {results.length} processed rows.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={subCategoryData} margin={{ top: 5, right: 20, left: 10, bottom: 80 }}>
-              <XAxis
-                dataKey="name"
-                fontSize={12}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={100}
-                tick={{ fill: labelColor }}
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fill: labelColor }}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
-              />
-              <Legend wrapperStyle={{ color: labelColor }} />
-              <Bar
-                dataKey="count"
-                fill="#82ca9d"
-                name="Count"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Row 1: Operations & Trends */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 10 Problem Airports</CardTitle>
+            <CardDescription>Volume of reports by Departure Airport</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={airportData} layout="vertical" margin={{ left: 20 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={50} tick={{ fill: labelColor }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
+                <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} name="Reports" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Issue Volume Over Time</CardTitle>
+            <CardDescription>Daily trend based on Flight Date</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="date" tick={{ fill: labelColor }} fontSize={12} />
+                <YAxis tick={{ fill: labelColor }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Fleet, Source, Confidence */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Fleet Breakdown</CardTitle>
+            <CardDescription>Issues by Aircraft</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie 
+                  data={fleetData} 
+                  cx="50%" cy="50%" 
+                  innerRadius={60} 
+                  outerRadius={80} 
+                  paddingAngle={5} 
+                  dataKey="value"
+                >
+                  {fleetData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Report Source</CardTitle>
+            <CardDescription>Crew vs. Passenger</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie 
+                  data={sourceData} 
+                  cx="50%" cy="50%" 
+                  outerRadius={80} 
+                  dataKey="value" 
+                  label
+                >
+                  {sourceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? "#FF8042" : "#0088FE"} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>AI Confidence</CardTitle>
+            <CardDescription>Certainty levels</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={confidenceData}>
+                <XAxis dataKey="name" tick={{ fill: labelColor, fontSize: 10 }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
+                <Bar dataKey="count" fill="#FFBB28" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -153,7 +294,7 @@ export default function App() {
       const health = await checkHealth();
       if (health.status === "healthy") {
         setApiOnline(true);
-        // --- FIX IS HERE: Check for sub_classes_count instead of model_loaded ---
+        // Correct check for new backend response
         const isLoaded = (health.sub_classes_count && health.sub_classes_count > 0) || false;
         setModelLoaded(isLoaded);
       } else {
@@ -168,10 +309,6 @@ export default function App() {
     }
   };
 
-  const predictComment = async (text: string) => {
-    return await predictText(text);
-  };
-
   const handleAnalyze = async () => {
     if (!commentText.trim()) {
       alert("Please enter a comment first.");
@@ -179,7 +316,7 @@ export default function App() {
     }
     setIsAnalyzing(true);
     try {
-      const result = await predictComment(commentText);
+      const result = await predictText(commentText);
       setPredictions(result);
     } catch {
       alert("Failed to analyze feedback.");
@@ -319,11 +456,7 @@ export default function App() {
                 <p>
                   This tool was developed to address a significant operational challenge: the manual processing of thousands of comments from Delta crew members regarding <strong>critical issues with their on-board meals</strong>.
                 </p>
-                <p>
-                  Previously, this qualitative data was reviewed and categorized by team members, a labor-intensive process that limited the speed of analysis and response.
-                </p>
-
-                {/* --- What Does This Model Do --- */}
+                
                 <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
                   <h3 className="mb-3">Purpose & Functionality</h3>
                   <p className="text-muted-foreground mb-6">
@@ -360,73 +493,13 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
-                    <strong>The goal:</strong> Convert unstructured feedback into actionable data at scale, reducing manual effort and accelerating insights.
-                  </div>
                 </div>
 
-                {/* --- How It Works --- */}
-                <div className="mt-6 p-6 rounded-lg bg-primary/5 border-2 border-primary/20">
-                  <h3 className="mb-3">Model Development & Training</h3>
-                  <p className="text-muted-foreground mb-6">
-                    The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
-                  </p>
-
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                      <div>
-                        <h4 className="font-medium">Augmented Training Data</h4>
-                        <p className="text-sm text-muted-foreground">Trained on expert-classified comments enriched with synonym augmentation.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                      <div>
-                        <h4 className="font-medium">BERT + Feature Fusion</h4>
-                        <p className="text-sm text-muted-foreground">Uses BERT for context and explicit keyword features for precision.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                      <div>
-                        <h4 className="font-medium">Subcategory Focus</h4>
-                        <p className="text-sm text-muted-foreground">Optimized to distinguish between specific issues like "Taste" vs "Presentation".</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
-                      <div>
-                        <h4 className="font-medium">Performance Validation</h4>
-                        <p className="text-sm text-muted-foreground">Rigorously tested using Top-2 and Top-3 accuracy metrics.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 p-3 rounded bg-muted/50 text-sm">
-                    <strong>In short:</strong> The model learned from human expertise to replicate the same classification process, but with much greater speed and scale.
-                  </div>
-                </div>
-
-                {/* --- Model Info Grid --- */}
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
                     <h4 className="mb-2">Project Owner</h4>
                     <p className="text-sm text-muted-foreground">
                       Patrisiya Rumyantseva
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Business Application</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Automated classification of critical feedback on Delta on-board crew meals for trend analysis and operational improvement.
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg border border-border bg-muted/30">
-                    <h4 className="mb-2">Technology Stack</h4>
-                    <p className="text-sm text-muted-foreground">
-                      TensorFlow/Keras (Model), BERT (Base Architecture), React (UI), FastAPI (API).
                     </p>
                   </div>
                   <div className="p-4 rounded-lg border border-border bg-muted/30">
