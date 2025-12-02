@@ -30,7 +30,7 @@ async function checkHealth() {
     if (!response.ok) throw new Error("Health check failed");
     return await response.json();
   } catch {
-    return { status: "offline", model_loaded: false };
+    return { status: "offline", sub_classes_count: 0 };
   }
 }
 
@@ -108,7 +108,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                 interval={0}
                 angle={-45}
                 textAnchor="end"
-                height={100} 
+                height={100}
                 tick={{ fill: labelColor }}
               />
               <YAxis
@@ -147,16 +147,15 @@ export default function App() {
     checkApiHealth();
   }, []);
 
-
   const checkApiHealth = async () => {
     setChecking(true);
     try {
       const health = await checkHealth();
       if (health.status === "healthy") {
         setApiOnline(true);
-        // FIX: The backend returns 'sub_classes_count', not 'model_loaded'.
-        // We consider the model loaded if classes are found OR if status is healthy.
-        setModelLoaded(health.sub_classes_count > 0 || true); 
+        // --- FIX IS HERE: Check for sub_classes_count instead of model_loaded ---
+        const isLoaded = (health.sub_classes_count && health.sub_classes_count > 0) || false;
+        setModelLoaded(isLoaded);
       } else {
         setApiOnline(false);
         setModelLoaded(false);
@@ -168,7 +167,6 @@ export default function App() {
       setChecking(false);
     }
   };
-
 
   const predictComment = async (text: string) => {
     return await predictText(text);
@@ -308,7 +306,7 @@ export default function App() {
             <AnalyticsDashboard results={bulkResults} />
           </TabsContent>
 
-          {/* About Tab (Restored & Updated for v3.0) */}
+          {/* About Tab */}
           <TabsContent value="about">
             <Card>
               <CardHeader>
@@ -332,7 +330,6 @@ export default function App() {
                     The model automates the manual review process by analyzing each comment and classifying it into a precise <strong>Subcategory</strong> for immediate action.
                   </p>
                   
-                  {/* --- Icon Grid for Features --- */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                       <Brain className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
@@ -376,7 +373,6 @@ export default function App() {
                     The model's accuracy is derived from being fine-tuned on a historical dataset of comments that had already been expertly classified by the Delta team.
                   </p>
 
-                  {/* --- Visual Stepper for Process --- */}
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
