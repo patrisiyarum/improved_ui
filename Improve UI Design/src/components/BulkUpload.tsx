@@ -8,7 +8,6 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
 interface BulkUploadProps {
-  // The prop is named 'onPredict', so we must use 'onPredict' inside this component
   onPredict: (text: string) => Promise<{ subPredictions: any[] }>;
   onUploadComplete: (results: any[]) => void;
 }
@@ -29,8 +28,9 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
   const [columns, setColumns] = useState<string[]>([]);
   const [stitchCount, setStitchCount] = useState(0);
 
-  // --- Helper: Aggressive Data Cleaning ---
+  // --- Helper: Aggressive Data Cleaning (Fixed for Dates) ---
   const cleanValue = (val: any) => {
+    // 1. Handle actual Numbers (Round long decimals)
     if (typeof val === 'number') {
         if (!Number.isInteger(val)) {
             return parseFloat(val.toFixed(2));
@@ -38,7 +38,9 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         return val;
     }
     
+    // 2. Handle Strings (Clean artifacts & Round numeric strings)
     if (typeof val === 'string') {
+        // Fix encoded newlines and trim whitespace
         let cleaned = val
             .replace(/_x005F_x000D_/gi, "\n")
             .replace(/_x000D_/gi, "\n")
@@ -47,23 +49,31 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
             .replace(/\r/g, "\n")
             .trim();
 
-        const num = parseFloat(cleaned);
-        const isNumeric = !isNaN(num) && isFinite(num) && !cleaned.includes("_") && !cleaned.match(/[a-z]/i);
+        // STRICT Number Check: Only convert if it is purely numeric.
+        // This prevents dates like "03/24/2025" from turning into "3"
+        // and prevents "2025-03-24" from turning into "2025"
+        const isPureNumber = /^-?\d+(\.\d+)?$/.test(cleaned);
         
-        if (isNumeric) {
+        if (isPureNumber) {
+             const num = parseFloat(cleaned);
+             // Only round if it has a decimal point (preserves IDs like 246714)
              if (cleaned.includes(".")) {
                  return parseFloat(num.toFixed(2));
              }
-             return num;
+             return num; 
         }
+
         return cleaned;
     }
+    
     return val;
   };
 
+  // --- Helper: Parse Excel (Smart Header & Date Fix) ---
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
@@ -73,10 +83,12 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           let foundHeaderRow = 0;
           let sheetFound = false;
 
+          // Search ALL sheets for the correct headers
           for (const sheetName of workbook.SheetNames) {
             const sheet = workbook.Sheets[sheetName];
             const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
             
+            // Scan first 20 rows
             const rowIndex = rawData.slice(0, 20).findIndex(row => 
               row && row.some(cell => 
                 typeof cell === 'string' && 
@@ -87,18 +99,28 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
             if (rowIndex !== -1) {
               console.log(`✅ Found valid headers in sheet: "${sheetName}" on row ${rowIndex + 1}`);
               foundHeaderRow = rowIndex;
+              
+              // FIX: 'raw: false' forces dates to be read as strings ("3/24/25") not numbers (45730)
               foundSheetData = XLSX.utils.sheet_to_json(sheet, { 
                 defval: "",
-                range: foundHeaderRow 
+                range: foundHeaderRow,
+                raw: false, 
+                dateNF: 'mm/dd/yyyy' // Fallback format
               });
+              
               sheetFound = true;
               break;
             }
           }
 
           if (!sheetFound) {
+            console.warn("⚠️ No header match found. Defaulting to first sheet.");
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            foundSheetData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+            foundSheetData = XLSX.utils.sheet_to_json(firstSheet, { 
+                defval: "", 
+                raw: false, 
+                dateNF: 'mm/dd/yyyy' 
+            });
           }
           resolve(foundSheetData);
         } catch (error) {
@@ -111,6 +133,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
     });
   };
 
+  // --- Helper: Parse CSV ---
   const parseCSV = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
@@ -140,6 +163,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         
         if (!Array.isArray(data)) throw new Error("Parsed data is not an array");
         
+        // Preview: Clean data immediately
         const cleanedPreview = data.slice(0, 5).map(row => {
             const newRow: any = {};
             Object.keys(row).forEach(k => newRow[k] = cleanValue(row[k]));
@@ -177,6 +201,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
 
       const originalHeaders = Object.keys(rawData[0]);
 
+      // Identify Text Column
       const textCol = originalHeaders.find((h) => {
         const headerLower = h.toLowerCase().trim();
         return COLUMN_KEYWORDS.some((keyword) => headerLower.includes(keyword));
@@ -193,24 +218,29 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       let stitched = 0;
       const keyCol1 = originalHeaders[0]; 
 
+      // --- Processing Loop with Cleaning & Stitching ---
       for (const row of rawData) {
+        // 1. Clean every cell in this row
         const cleanedRow: any = {};
         Object.keys(row).forEach(key => {
             cleanedRow[key] = cleanValue(row[key]);
         });
 
+        // 2. Stitching Logic
         const firstVal = cleanedRow[keyCol1];
         
         if (firstVal !== undefined && firstVal !== "") {
           cleanData.push(cleanedRow);
           lastValidRow = cleanedRow;
         } else if (lastValidRow && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+          // Stitching for broken CSV rows
           const fragment = Object.values(cleanedRow).filter(v => v).join(" ");
           if (fragment) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
         } else {
+             // For Excel, blindly push valid rows
              if (cleanedRow[textCol]) cleanData.push(cleanedRow);
         }
       }
@@ -219,10 +249,11 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       const finalHeaders = [...originalHeaders, "Predicted_Subcategory", "Subcategory_Confidence"];
       setColumns(finalHeaders);
 
+      // --- Prediction Loop ---
       const processedResults = [];
       for (let i = 0; i < cleanData.length; i++) {
         const row = cleanData[i];
-        const commentText = row[textCol]?.trim() || "";
+        const commentText = row[textCol]?.toString().trim() || "";
 
         if (!commentText) {
           processedResults.push(row);
@@ -230,9 +261,7 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         }
 
         try {
-          // --- THIS IS THE FIX: USE 'onPredict', NOT 'predictComment' ---
           const { subPredictions } = await onPredict(commentText);
-          
           const newRow = {
             ...row,
             Predicted_Subcategory: subPredictions[0]?.label || "Unknown",
