@@ -8,6 +8,7 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
 interface BulkUploadProps {
+  // The prop is named 'onPredict', so we must use 'onPredict' inside this component
   onPredict: (text: string) => Promise<{ subPredictions: any[] }>;
   onUploadComplete: (results: any[]) => void;
 }
@@ -30,7 +31,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
 
   // --- Helper: Aggressive Data Cleaning ---
   const cleanValue = (val: any) => {
-    // 1. Handle actual Numbers (Round long decimals)
     if (typeof val === 'number') {
         if (!Number.isInteger(val)) {
             return parseFloat(val.toFixed(2));
@@ -38,41 +38,32 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         return val;
     }
     
-    // 2. Handle Strings (Clean artifacts & Round numeric strings)
     if (typeof val === 'string') {
-        // Fix encoded newlines and trim whitespace
         let cleaned = val
-            .replace(/_x005F_x000D_/gi, "\n") // Double-escaped
-            .replace(/_x000D_/gi, "\n")       // Standard escaped
-            .replace(/_x000d_/gi, "\n")       // Lowercase variation
+            .replace(/_x005F_x000D_/gi, "\n")
+            .replace(/_x000D_/gi, "\n")
+            .replace(/_x000d_/gi, "\n")
             .replace(/\r\n/g, "\n")
             .replace(/\r/g, "\n")
             .trim();
 
-        // Check if string is actually a number (e.g., "1.302222")
-        // We ensure it's not an ID like "246714" (integers are fine) but we target decimals.
         const num = parseFloat(cleaned);
         const isNumeric = !isNaN(num) && isFinite(num) && !cleaned.includes("_") && !cleaned.match(/[a-z]/i);
         
         if (isNumeric) {
-             // Only round if it has a decimal point (preserves IDs like 246714)
              if (cleaned.includes(".")) {
                  return parseFloat(num.toFixed(2));
              }
-             return num; // Convert "246714" string to number type
+             return num;
         }
-
         return cleaned;
     }
-    
     return val;
   };
 
-  // --- Helper: Parse Excel (Smart Header Search) ---
   const parseExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
@@ -82,12 +73,10 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           let foundHeaderRow = 0;
           let sheetFound = false;
 
-          // Search ALL sheets for the correct headers
           for (const sheetName of workbook.SheetNames) {
             const sheet = workbook.Sheets[sheetName];
             const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
             
-            // Scan first 20 rows
             const rowIndex = rawData.slice(0, 20).findIndex(row => 
               row && row.some(cell => 
                 typeof cell === 'string' && 
@@ -108,7 +97,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
           }
 
           if (!sheetFound) {
-            console.warn("⚠️ No header match found. Defaulting to first sheet.");
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
             foundSheetData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
           }
@@ -123,7 +111,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
     });
   };
 
-  // --- Helper: Parse CSV ---
   const parseCSV = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
@@ -153,7 +140,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         
         if (!Array.isArray(data)) throw new Error("Parsed data is not an array");
         
-        // Preview: Clean data immediately so preview looks nice
         const cleanedPreview = data.slice(0, 5).map(row => {
             const newRow: any = {};
             Object.keys(row).forEach(k => newRow[k] = cleanValue(row[k]));
@@ -191,7 +177,6 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
 
       const originalHeaders = Object.keys(rawData[0]);
 
-      // Identify Text Column
       const textCol = originalHeaders.find((h) => {
         const headerLower = h.toLowerCase().trim();
         return COLUMN_KEYWORDS.some((keyword) => headerLower.includes(keyword));
@@ -208,29 +193,24 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       let stitched = 0;
       const keyCol1 = originalHeaders[0]; 
 
-      // --- Processing Loop with Cleaning & Stitching ---
       for (const row of rawData) {
-        // 1. Clean every cell in this row
         const cleanedRow: any = {};
         Object.keys(row).forEach(key => {
             cleanedRow[key] = cleanValue(row[key]);
         });
 
-        // 2. Stitching Logic
         const firstVal = cleanedRow[keyCol1];
         
         if (firstVal !== undefined && firstVal !== "") {
           cleanData.push(cleanedRow);
           lastValidRow = cleanedRow;
         } else if (lastValidRow && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-          // If CSV row is broken (no ID in col 1), stitch text to previous row
           const fragment = Object.values(cleanedRow).filter(v => v).join(" ");
           if (fragment) {
             lastValidRow[textCol] += "\n" + fragment;
             stitched++;
           }
         } else {
-             // For Excel, if row has text but no ID, we keep it if it's valid data
              if (cleanedRow[textCol]) cleanData.push(cleanedRow);
         }
       }
@@ -239,11 +219,10 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
       const finalHeaders = [...originalHeaders, "Predicted_Subcategory", "Subcategory_Confidence"];
       setColumns(finalHeaders);
 
-      // --- Prediction Loop ---
       const processedResults = [];
       for (let i = 0; i < cleanData.length; i++) {
         const row = cleanData[i];
-        const commentText = row[textCol]?.toString().trim() || "";
+        const commentText = row[textCol]?.trim() || "";
 
         if (!commentText) {
           processedResults.push(row);
@@ -251,7 +230,9 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         }
 
         try {
+          // --- THIS IS THE FIX: USE 'onPredict', NOT 'predictComment' ---
           const { subPredictions } = await onPredict(commentText);
+          
           const newRow = {
             ...row,
             Predicted_Subcategory: subPredictions[0]?.label || "Unknown",
@@ -287,16 +268,9 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
     if (!results || results.length === 0) return;
 
     try {
-      // Create new workbook
       const workbook = XLSX.utils.book_new();
-      
-      // Convert JSON results to Sheet
       const worksheet = XLSX.utils.json_to_sheet(results, { header: columns });
-      
-      // Append sheet
       XLSX.utils.book_append_sheet(workbook, worksheet, "Categorized Feedback");
-      
-      // Download as .xlsx
       XLSX.writeFile(workbook, "categorized_feedback.xlsx");
     } catch (err) {
       console.error("Download error:", err);
