@@ -315,7 +315,8 @@ export function BulkUpload({ onPredict, onUploadComplete }: BulkUploadProps) {
         <div className="border-2 border-dashed border-border rounded-lg p-8 text-center mb-4 hover:bg-muted/50 transition-colors">
           <Upload className="mx-auto mb-4 w-12 h-12 text-muted-foreground" />
           <p className="text-muted-foreground mb-4">
-            Upload a CSV or Excel file with feedback comments
+            Upload a CSV or Excel file with feedback comments 
+            (must have Pilot's Questions/Answers column)
           </p>
           <input
             type="file"
