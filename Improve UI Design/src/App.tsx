@@ -162,12 +162,15 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
   return (
     <div className="space-y-6">
       
-      {/* --- ROW 1: AI CONFIDENCE & TRENDS --- */}
+      {/* --- ROW 1: AI CONFIDENCE & TOP AIRPORTS (Side-by-Side) --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle>AI Confidence</CardTitle>
-            <CardDescription>Model certainty distribution</CardDescription>
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              <CardTitle>AI Confidence Health Check</CardTitle>
+            </div>
+            <CardDescription>Model certainty across {results.length} records</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -176,7 +179,7 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
                 <XAxis dataKey="name" tick={{ fill: labelColor, fontSize: 12 }} />
                 <YAxis tick={{ fill: labelColor }} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
-                <Bar dataKey="count" fill="#FFBB28" radius={[4, 4, 0, 0]} name="Records" />
+                <Bar dataKey="count" fill="#FFBB28" radius={[4, 4, 0, 0]} name="Records" barSize={60} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -184,46 +187,47 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Issue Volume Over Time</CardTitle>
-            <CardDescription>Daily trend based on Flight Date</CardDescription>
+            <CardTitle>Top 10 Problem Airports</CardTitle>
+            <CardDescription>Volume of reports by Departure Station</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="date" tick={{ fill: labelColor }} fontSize={12} />
-                <YAxis tick={{ fill: labelColor }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
-              </LineChart>
+              <BarChart data={airportData} layout="vertical" margin={{ left: 0 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={40} tick={{ fill: labelColor, fontSize: 11 }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
+                <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} name="Reports" barSize={20} />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* --- ROW 2: AIRPORTS, FLEET & SOURCE --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Top Airports</CardTitle>
-            <CardDescription>Problematic stations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={airportData} layout="vertical" margin={{ left: 0 }}>
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={40} tick={{ fill: labelColor, fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{fill: 'transparent'}} />
-                <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]} name="Reports" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* --- ROW 2: TRENDS (Full Width) --- */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Issue Volume Over Time</CardTitle>
+          <CardDescription>Daily trend based on Flight Date</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <XAxis dataKey="date" tick={{ fill: labelColor }} fontSize={12} />
+              <YAxis tick={{ fill: labelColor }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        <Card className="md:col-span-1">
+      {/* --- ROW 3: FLEET & SOURCE --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
             <CardTitle>Fleet Breakdown</CardTitle>
-            <CardDescription>Issues by Aircraft</CardDescription>
+            <CardDescription>Issues by Aircraft Type</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -247,10 +251,10 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-1">
+        <Card>
           <CardHeader>
             <CardTitle>Report Source</CardTitle>
-            <CardDescription>Crew vs. Passenger</CardDescription>
+            <CardDescription>Crew vs. Passenger Meals</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
