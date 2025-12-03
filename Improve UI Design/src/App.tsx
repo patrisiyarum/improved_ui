@@ -167,7 +167,6 @@ function AnalyticsDashboard({ results }: { results: BulkResultRow[] }) {
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-primary" />
               <CardTitle>AI Confidence Health Check</CardTitle>
             </div>
             <CardDescription>Model certainty across {results.length} records</CardDescription>
