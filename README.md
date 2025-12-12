@@ -1,67 +1,152 @@
 # FCR Feedback Categorization Frontend
 
-This repository contains the React frontend for the "FCR Feedback Categorization Tool." This is a modern, responsive web application designed to interact with a machine learning backend API.
+A modern, responsive web application for analyzing and categorizing operational feedback from Delta crew members about on-board meals. This tool automates the manual review process using AI to classify feedback into precise subcategories.
 
-The purpose of this tool is to automate and scale the analysis of operational feedback, specifically for categorizing comments from Delta crew members about on-board meals. It takes unstructured text and uses an AI model to classify it into a relevant **Main Category** and **Sub-Category**.
-
-This frontend is built to communicate with a separate [FastAPI backend](https://github.com/patrisiyarum/feedback_webapp) (hosted at `https://feedback-webapp-5zc2.onrender.com`).
+This frontend connects to a separate [FastAPI backend](https://github.com/patrisiyarum/feedback_webapp) hosted at `https://feedback-webapp-5zc2.onrender.com`.
 
 ## Technology Stack
 
-This project is a frontend application built with:
+* **Framework:** React 18
+* **Language:** TypeScript
+* **Build Tool:** Vite 6
+* **UI Library:** Shadcn/ui (Radix UI components)
+* **Data Visualization:** Recharts
+* **Icons:** Lucide React
+* **File Processing:** PapaParse (CSV), SheetJS (Excel)
 
-* **Framework:** **React**
-* **Language:** **TypeScript**
-* **Build Tool:** **Vite**
-* **UI Components:** **Shadcn/ui** (using Radix UI components)
-* **Data Visualization:** **Recharts** (for the analytics dashboard)
-* **Icons:** **Lucide React**
-
-## Core Features
-
-The application is organized into three main tabs:
+## Features
 
 ### 1. Analyze Tab
-* **Single Comment Analysis:** A text area allows users to enter a single piece of feedback for instant classification.
-* **Prediction Display:** Results are shown in a clean "Prediction Card" that details the predicted Main and Sub-Categories.
-* **Bulk CSV Upload:** Users can upload a CSV file with a 'text' column for batch processing. The app calls the API for each row, appends the predictions, and provides the results as a downloadable CSV.
-* **Sample Comments:** Includes a component with pre-filled example comments to demonstrate the model's capabilities.
+* **Single Comment Analysis** - Enter feedback text for instant AI classification
+* **Prediction Results** - View predicted subcategory with confidence scores
+* **Bulk Upload** - Process CSV/Excel files containing multiple comments
+* **Sample Comments** - Pre-filled examples to test the model
+* **Smart File Processing** - Automatic header detection and data cleaning
 
-### 2. Analytics Tab
-* **Dynamic Dashboard:** After a bulk CSV upload is processed, this tab populates with interactive bar charts.
-* **Data Visualization:** Displays charts for "Main Category Distribution" and "Subcategory Distribution" based on the uploaded data, helping to identify trends.
+### 2. Analytics Dashboard
+After bulk processing, view comprehensive insights:
+* **AI Confidence Health Check** - Distribution of model certainty across predictions
+* **Top Problem Airports** - Volume of reports by departure station
+* **Issue Volume Over Time** - Daily trends from flight date data
+* **Fleet Breakdown** - Issues categorized by aircraft type
+* **Report Source Analysis** - Crew vs passenger meal categorization
 
 ### 3. About Tab
-* **Project Context:** Provides a detailed explanation of the project's business purpose (automating feedback on Delta crew meals).
-* **Model Architecture:** Describes how the AI model works, including its **Fine-Tuned BERT** base and **Dual-Output Architecture**.
-* **Technology Stack:** Lists the full stack for both the frontend (React) and the backend (FastAPI, TensorFlow/Keras).
+* Project background and business context
+* Model architecture details (Augmented BERT)
+* Hybrid intelligence approach (deep learning + keyword extraction)
+* Technology stack information
 
-### API Connection
-* **Health Check:** The app automatically pings the backend's `/health` endpoint to show the connection status ("API Connected" and "Model Loaded") in the header.
+### Additional Features
+* **Real-time API Health Monitoring** - Connection and model status indicators
+* **Dark Mode UI** - Modern, accessible interface
+* **Excel Export** - Download categorized results with predictions
+* **Progress Tracking** - Visual feedback during bulk processing
+
+## Project Structure
+
+```
+Improve UI Design/
+├── src/
+│   ├── App.tsx                    # Main application component
+│   ├── main.tsx                   # Application entry point
+│   ├── components/
+│   │   ├── BulkUpload.tsx         # CSV/Excel upload and processing
+│   │   ├── PredictionCard.tsx     # Results display component
+│   │   ├── SampleComments.tsx     # Example feedback samples
+│   │   └── ui/                    # Reusable UI components
+│   │       ├── alert.tsx
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── progress.tsx
+│   │       ├── tabs.tsx
+│   │       ├── textarea.tsx
+│   │       └── utils.ts
+├── package.json
+├── vite.config.ts
+└── vercel.json
+```
 
 ## Running Locally
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/patrisiyarum/improved_ui.git](https://github.com/patrisiyarum/improved_ui.git)
-    cd improved_ui
-    ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/patrisiyarum/improved_ui.git
+   cd improved_ui
+   cd "Improve UI Design"
+   ```
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-    (This command reads `package.json` and installs all required libraries like React, Vite, etc.)
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-3.  **Set up the Backend API URL:**
-    This application requires a running backend API. The code will look for a URL at `https://feedback-webapp-5zc2.onrender.com`.
+3. **Configure Backend API:**
+   The app connects to `https://feedback-webapp-5zc2.onrender.com` by default.
 
-    If you are running the [backend server](https://github.com/patrisiyarum/feedback_webapp) locally (e.g., at `http://localhost:8000`), you will need to update the `API_URL` variable in `src/App.tsx` or `src/lib/api.ts`.
+   To use a local backend, update the `API_URL` constant in `src/App.tsx`:
+   ```typescript
+   const API_URL = "http://localhost:8000";
+   ```
 
-4.  **Start the development server:**
-    ```bash
-    npm run dev
-    ```
-    (This command runs the Vite development server).
+4. **Start development server:**
+   ```bash
+   npm run dev
+   ```
 
-    Open your browser to `http://localhost:5173` (or the URL shown in your terminal) to view the application.
+   Open your browser to `http://localhost:5173`
+
+5. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+## Usage
+
+1. **Single Analysis:** Enter a comment in the Analyze tab and click "Analyze Feedback"
+2. **Bulk Processing:** Upload a CSV/Excel file with a text column containing feedback
+3. **View Analytics:** After bulk upload, switch to the Analytics tab for visualizations
+4. **Export Results:** Download the categorized data as an Excel file
+
+## API Integration
+
+The application expects the backend to provide these endpoints:
+* `GET /health` - API and model status
+* `POST /predict` - Single comment prediction
+
+Required request format:
+```json
+{
+  "text": "The meal was cold and unappetizing"
+}
+```
+
+Expected response format:
+```json
+{
+  "subPredictions": [
+    {
+      "label": "Food Quality",
+      "probability": 94.5
+    }
+  ]
+}
+```
+
+## Development
+
+Built with modern React patterns:
+* Functional components with hooks
+* TypeScript for type safety
+* Responsive design with Tailwind CSS
+* Client-side file processing
+* Optimized chart rendering with useMemo
+
+## Deployment
+
+The application is configured for Vercel deployment (see `vercel.json`). The build output is optimized for production with code splitting and tree shaking.
+
+## Author
+
+**Patrisiya Rumyantseva** - Version 3.0 (November 2025)
