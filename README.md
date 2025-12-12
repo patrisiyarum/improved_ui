@@ -4,6 +4,8 @@ A modern, responsive web application for analyzing and categorizing operational 
 
 This frontend connects to a separate [FastAPI backend](https://github.com/patrisiyarum/feedback_webapp) hosted at `https://feedback-webapp-5zc2.onrender.com`.
 
+**Live Demo:** https://improved-ui.onrender.com (currently suspended)
+
 ## Technology Stack
 
 * **Framework:** React 18
@@ -145,7 +147,16 @@ Built with modern React patterns:
 
 ## Deployment
 
-The application is configured for Vercel deployment (see `vercel.json`). The build output is optimized for production with code splitting and tree shaking.
+The application is deployed on [Render](https://render.com) at https://improved-ui.onrender.com.
+
+### Render Configuration
+
+The app is configured as a static site on Render with the following settings:
+* **Build Command:** `cd "Improve UI Design" && npm install && npm run build`
+* **Publish Directory:** `Improve UI Design/dist`
+* **Auto-Deploy:** Enabled from the `claude/deploy-render-frontend-01GqjkPnWmWhseaMU36B4rnB` branch
+
+The build output is optimized for production with code splitting and tree shaking.
 
 ## Author
 
